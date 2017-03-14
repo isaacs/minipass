@@ -1,0 +1,25 @@
+{
+  "name": "minipass",
+  "version": "0.0.0",
+  "description": "minimal implementation of a PassThrough stream",
+  "main": "index.js",
+  "dependencies": {
+    "yallist": "^3.0.0"
+  },
+  "devDependencies": {
+    "tap": "10"
+  },
+  "scripts": {
+    "test": "tap test/*.js --100"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/isaacs/minipass.git"
+  },
+  "keywords": [
+    "passthrough",
+    "stream"
+  ],
+  "author": "Isaac Z. Schlueter <i@izs.me> (http://blog.izs.me/)",
+  "license": "ISC"
+}
