@@ -97,7 +97,9 @@ t.test('write after end', async t => {
   mp.on('end', _ => sawEnd = true)
   mp.end()
   t.throws(_ => mp.write('nope'))
-  t.ok(sawEnd, 'should get end event')
+  t.notOk(sawEnd, 'should not get end event yet (not flowing)')
+  mp.resume()
+  t.ok(sawEnd, 'should get end event after resume()')
 })
 
 t.test('write cb', async t => {

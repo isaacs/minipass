@@ -1,6 +1,8 @@
 const EE = require('events')
 const Yallist = require('yallist')
 const EOF = Symbol('EOF')
+const MAYBE_EMIT_END = Symbol('maybeEmitEnd')
+const EMITTED_END = Symbol('emittedEnd')
 const READ = Symbol('read')
 const SD = require('string_decoder').StringDecoder
 
@@ -15,6 +17,7 @@ class MiniPass extends EE {
       this.encoding = null
     this.decoder = this.encoding ? new SD(this.encoding) : null
     this[EOF] = false
+    this[EMITTED_END] = false
   }
 
   write (chunk, encoding = 'utf8', cb = null) {
@@ -39,13 +42,17 @@ class MiniPass extends EE {
   }
 
   read (n) {
-    if (!this.buffer.length || n === 0)
-      return null
+    try {
+      if (!this.buffer.length || n === 0)
+        return null
 
-    if (this.buffer.length > 1)
-      this.buffer = new Yallist([Buffer.concat(Array.from(this.buffer))])
+      if (this.buffer.length > 1)
+        this.buffer = new Yallist([Buffer.concat(Array.from(this.buffer))])
 
-    return this[READ](n, this.buffer.head.value)
+      return this[READ](n, this.buffer.head.value)
+    } finally {
+      this[MAYBE_EMIT_END]()
+    }
   }
 
   [READ] (n, chunk) {
@@ -66,14 +73,16 @@ class MiniPass extends EE {
     if (chunk)
       this.write(chunk)
     this[EOF] = true
-    if (this.buffer.length === 0)
-      this.flush()
+    if (this.flowing)
+      this[MAYBE_EMIT_END]()
   }
 
   resume () {
     this.flowing = true
     if (this.buffer.length)
       this.flush()
+    else
+      this[MAYBE_EMIT_END]()
   }
 
   pause () {
@@ -110,6 +119,11 @@ class MiniPass extends EE {
     }
   }
 
+  [MAYBE_EMIT_END] () {
+    if (!this[EMITTED_END] && this.buffer.length === 0 && this[EOF])
+      this.emit('end')
+  }
+
   emit (ev, data, ...args) {
     if (ev === 'data') {
       if (this.decoder)
@@ -129,13 +143,14 @@ class MiniPass extends EE {
         }
       }
       this.pipes.forEach(dest => dest.end())
+      this[EMITTED_END] = true
     }
 
     try {
       return super.emit(ev, data, ...args)
     } finally {
-      if (ev !== 'end' && this.buffer.length === 0 && this[EOF])
-        this.emit('end')
+      if (ev !== 'end')
+        this[MAYBE_EMIT_END]()
     }
   }
 }
