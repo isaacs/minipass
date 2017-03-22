@@ -119,9 +119,16 @@ class MiniPass extends EE {
     }
   }
 
+  get emittedEnd () {
+    return this[EMITTED_END]
+  }
+
   [MAYBE_EMIT_END] () {
-    if (!this[EMITTED_END] && this.buffer.length === 0 && this[EOF])
+    if (!this[EMITTED_END] && this.buffer.length === 0 && this[EOF]) {
       this.emit('end')
+      this.emit('finished')
+      this.emit('close')
+    }
   }
 
   emit (ev, data, ...args) {
