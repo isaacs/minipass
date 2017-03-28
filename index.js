@@ -5,6 +5,8 @@ const EOF = Symbol('EOF')
 const MAYBE_EMIT_END = Symbol('maybeEmitEnd')
 const EMITTED_END = Symbol('emittedEnd')
 const READ = Symbol('read')
+const FLUSH = Symbol('flush')
+const FLUSHCHUNK = Symbol('flushChunk')
 const SD = require('string_decoder').StringDecoder
 
 class MiniPass extends EE {
@@ -87,7 +89,7 @@ class MiniPass extends EE {
   resume () {
     this.flowing = true
     if (this.buffer.length)
-      this.flush()
+      this[FLUSH]()
     else
       this[MAYBE_EMIT_END]()
   }
@@ -96,14 +98,14 @@ class MiniPass extends EE {
     this.flowing = false
   }
 
-  flush () {
-    do {} while (this.flushChunk(this.buffer.shift()))
+  [FLUSH] () {
+    do {} while (this[FLUSHCHUNK](this.buffer.shift()))
 
     if (!this.buffer.length)
       this.emit('drain')
   }
 
-  flushChunk (chunk) {
+  [FLUSHCHUNK] (chunk) {
     return chunk ? (this.emit('data', chunk), this.flowing) : false
   }
 
