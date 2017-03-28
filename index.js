@@ -71,13 +71,17 @@ class MiniPass extends EE {
   }
 
   end (chunk, encoding, cb) {
+    if (typeof chunk === 'function')
+      cb = chunk, chunk = null
+    if (typeof encoding === 'function')
+      cb = encoding, encoding = 'utf8'
     if (chunk)
       this.write(chunk, encoding)
+    if (cb)
+      this.once('end', cb)
     this[EOF] = true
     if (this.flowing)
       this[MAYBE_EMIT_END]()
-    if (cb)
-      cb()
   }
 
   resume () {
@@ -152,7 +156,10 @@ class MiniPass extends EE {
           super.emit('data', data)
         }
       }
-      this.pipes.forEach(dest => dest.end())
+      this.pipes.forEach(dest => {
+        if (dest !== process.stdout && dest !== process.stderr)
+          dest.end()
+      })
       this[EMITTED_END] = true
     }
 

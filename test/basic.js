@@ -116,7 +116,7 @@ t.test('end with chunk', async t => {
   mp.on('end', _ => sawEnd = true)
   mp.addEventHandler('data', c => out += c)
   let endCb = false
-  mp.end('ok', 'utf8', _ => endCb = true)
+  mp.end('ok', _ => endCb = true)
   t.equal(out, 'ok')
   t.ok(sawEnd, 'should see end event')
   t.ok(endCb, 'end cb should get called')
@@ -141,10 +141,38 @@ t.test('end with chunk pending', async t => {
   t.equal(mp.write('qux'), false)
   let sawEnd = false
   mp.on('end', _ => sawEnd = true)
-  mp.end()
+  let endCb = false
+  mp.end(_ => endCb = true)
+  t.notOk(endCb, 'endcb should not happen yet')
   t.notOk(sawEnd, 'should not see end yet')
   let out = ''
   mp.on('data', c => out += c)
   t.ok(sawEnd, 'see end after flush')
+  t.ok(endCb, 'end cb after flush')
   t.equal(out, 'foobarbazqux')
+})
+
+t.test('pipe to stderr does not throw', t => {
+  const spawn = require('child_process').spawn
+  const module = JSON.stringify(require.resolve('../'))
+  const fs = require('fs')
+  const file = __dirname + '/prog.js'
+  fs.writeFileSync(file, `
+    const MP = require(${module})
+    const mp = new MP()
+    mp.pipe(process.stderr)
+    mp.end("hello")
+  `)
+  let err = ''
+  return new Promise(res => {
+    const child = spawn(process.execPath, [file])
+    child.stderr.on('data', c => err += c)
+    child.on('close', (code, signal) => {
+      t.equal(code, 0)
+      t.equal(signal, null)
+      t.equal(err, 'hello')
+      fs.unlinkSync(file)
+      res()
+    })
+  })
 })
