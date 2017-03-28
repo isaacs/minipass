@@ -1,3 +1,4 @@
+'use strict'
 const EE = require('events')
 const Yallist = require('yallist')
 const EOF = Symbol('EOF')
@@ -20,7 +21,7 @@ class MiniPass extends EE {
     this[EMITTED_END] = false
   }
 
-  write (chunk, encoding = 'utf8', cb = null) {
+  write (chunk, encoding, cb) {
     if (this[EOF])
       throw new Error('write after end')
 
@@ -69,12 +70,14 @@ class MiniPass extends EE {
     return chunk
   }
 
-  end (chunk) {
+  end (chunk, encoding, cb) {
     if (chunk)
-      this.write(chunk)
+      this.write(chunk, encoding)
     this[EOF] = true
     if (this.flowing)
       this[MAYBE_EMIT_END]()
+    if (cb)
+      cb()
   }
 
   resume () {

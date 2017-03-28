@@ -115,9 +115,11 @@ t.test('end with chunk', async t => {
   let sawEnd = false
   mp.on('end', _ => sawEnd = true)
   mp.addEventHandler('data', c => out += c)
-  mp.end('ok')
+  let endCb = false
+  mp.end('ok', 'utf8', _ => endCb = true)
   t.equal(out, 'ok')
   t.ok(sawEnd, 'should see end event')
+  t.ok(endCb, 'end cb should get called')
 })
 
 t.test('no drain if could not entirely drain on resume', async t => {
