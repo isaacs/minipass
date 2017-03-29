@@ -3,6 +3,8 @@ const t = require('tap')
 
 t.test('some basic piping and writing', async t => {
   let mp = new MiniPass()
+  t.equal(mp.readable, true)
+  t.equal(mp.writable, true)
   t.equal(mp.write('hello'), false)
   let dest = new MiniPass()
   let sawDestData = false

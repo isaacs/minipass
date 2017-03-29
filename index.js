@@ -23,6 +23,9 @@ class MiniPass extends EE {
     this[EMITTED_END] = false
   }
 
+  get writable () { return true }
+  get readable () { return true }
+
   write (chunk, encoding, cb) {
     if (this[EOF])
       throw new Error('write after end')
