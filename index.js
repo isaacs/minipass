@@ -8,6 +8,8 @@ const READ = Symbol('read')
 const FLUSH = Symbol('flush')
 const FLUSHCHUNK = Symbol('flushChunk')
 const SD = require('string_decoder').StringDecoder
+const ENCODING = Symbol('encoding')
+const DECODER = Symbol('decoder')
 
 class MiniPass extends EE {
   constructor (options) {
@@ -15,12 +17,23 @@ class MiniPass extends EE {
     this.flowing = false
     this.pipes = new Yallist()
     this.buffer = new Yallist()
-    this.encoding = options && options.encoding || null
-    if (this.encoding === 'buffer')
-      this.encoding = null
-    this.decoder = this.encoding ? new SD(this.encoding) : null
+    this[ENCODING] = options && options.encoding || null
+    if (this[ENCODING] === 'buffer')
+      this[ENCODING] = null
+    this[DECODER] = this[ENCODING] ? new SD(this[ENCODING]) : null
     this[EOF] = false
     this[EMITTED_END] = false
+  }
+
+  get encoding () { return this[ENCODING] }
+  set encoding (enc) {
+    if (enc !== this[ENCODING])
+      this[DECODER] = enc ? new SD(enc) : null
+    this[ENCODING] = enc
+  }
+
+  setEncoding (enc) {
+    this.encoding = enc
   }
 
   get writable () { return true }
@@ -146,8 +159,8 @@ class MiniPass extends EE {
 
   emit (ev, data, ...args) {
     if (ev === 'data') {
-      if (this.decoder)
-        data = this.decoder.write(data)
+      if (this[DECODER])
+        data = this[DECODER].write(data)
 
       if (!data)
         return
@@ -155,8 +168,8 @@ class MiniPass extends EE {
       if (this.pipes.length)
         this.pipes.forEach(dest => dest.write(data) || this.pause())
     } else if (ev === 'end') {
-      if (this.decoder) {
-        data = this.decoder.end()
+      if (this[DECODER]) {
+        data = this[DECODER].end()
         if (data) {
           this.pipes.forEach(dest => dest.write(data))
           super.emit('data', data)

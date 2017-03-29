@@ -2,7 +2,10 @@ const MiniPass = require('../')
 const t = require('tap')
 
 t.test('some basic piping and writing', async t => {
-  let mp = new MiniPass()
+  let mp = new MiniPass({ encoding: 'base64' })
+  t.equal(mp.encoding, 'base64')
+  mp.encoding = null
+  t.equal(mp.encoding, null)
   t.equal(mp.readable, true)
   t.equal(mp.writable, true)
   t.equal(mp.write('hello'), false)
@@ -28,7 +31,28 @@ t.test('some basic piping and writing', async t => {
 t.test('unicode splitting', async t => {
   const butterfly = '🦋'
   const mp = new MiniPass({ encoding: 'utf8' })
-  t.plan(1)
+  t.plan(2)
+  t.equal(mp.encoding, 'utf8')
+  mp.on('data', chunk => {
+    t.equal(chunk, butterfly)
+  })
+  const butterbuf = new Buffer([0xf0, 0x9f, 0xa6, 0x8b])
+  mp.write(butterbuf.slice(0, 1))
+  mp.write(butterbuf.slice(1, 2))
+  mp.write(butterbuf.slice(2, 3))
+  mp.write(butterbuf.slice(3, 4))
+  mp.end()
+})
+
+t.test('unicode splitting with setEncoding', async t => {
+  const butterfly = '🦋'
+  const mp = new MiniPass({ encoding: 'hex' })
+  t.plan(4)
+  t.equal(mp.encoding, 'hex')
+  mp.setEncoding('hex')
+  t.equal(mp.encoding, 'hex')
+  mp.setEncoding('utf8')
+  t.equal(mp.encoding, 'utf8')
   mp.on('data', chunk => {
     t.equal(chunk, butterfly)
   })
