@@ -10,7 +10,7 @@ t.test('some basic piping and writing', async t => {
     sawDestData = true
     t.isa(chunk, Buffer)
   })
-  mp.pipe(dest)
+  t.equal(mp.pipe(dest), dest, 'pipe returns dest')
   t.ok(sawDestData, 'got data becasue pipe() flushes')
   t.equal(mp.write('bye'), true, 'write() returns true when flowing')
   dest.pause()

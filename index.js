@@ -113,6 +113,7 @@ class MiniPass extends EE {
     this.pipes.push(dest)
     dest.on('drain', _ => this.resume())
     this.resume()
+    return dest
   }
 
   addEventHandler (ev, fn) {
