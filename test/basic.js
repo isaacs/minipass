@@ -103,6 +103,16 @@ t.test('read method', async t => {
   t.same(mp.read(4), new Buffer(butterfly))
 })
 
+t.test('read with no args', async t => {
+  const butterfly = '🦋'
+  const mp = new MiniPass({ encoding: 'utf8' })
+  mp.on('data', c => t.equal(c, butterfly))
+  mp.pause()
+  mp.write(new Buffer(butterfly))
+  t.same(mp.read(), new Buffer(butterfly))
+  t.equal(mp.read(), null)
+})
+
 t.test('partial read', async t => {
   const butterfly = '🦋'
   const mp = new MiniPass()

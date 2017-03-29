@@ -68,7 +68,7 @@ class MiniPass extends EE {
       if (this.buffer.length > 1)
         this.buffer = new Yallist([Buffer.concat(Array.from(this.buffer))])
 
-      return this[READ](n, this.buffer.head.value)
+      return this[READ](n || null, this.buffer.head.value)
     } finally {
       this[MAYBE_EMIT_END]()
     }
@@ -77,7 +77,7 @@ class MiniPass extends EE {
   [READ] (n, chunk) {
     if (n > chunk.length)
       return null
-    else if (n === chunk.length)
+    else if (n === chunk.length || n === null)
       this.buffer.pop()
     else {
       this.buffer.head.value = chunk.slice(n)
