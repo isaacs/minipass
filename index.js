@@ -10,11 +10,12 @@ const FLUSHCHUNK = Symbol('flushChunk')
 const SD = require('string_decoder').StringDecoder
 const ENCODING = Symbol('encoding')
 const DECODER = Symbol('decoder')
+const FLOWING = Symbol('flowing')
 
 class MiniPass extends EE {
   constructor (options) {
     super()
-    this.flowing = false
+    this[FLOWING] = false
     this.pipes = new Yallist()
     this.buffer = new Yallist()
     this[ENCODING] = options && options.encoding || null
@@ -103,7 +104,7 @@ class MiniPass extends EE {
   }
 
   resume () {
-    this.flowing = true
+    this[FLOWING] = true
     if (this.buffer.length)
       this[FLUSH]()
     else
@@ -111,7 +112,11 @@ class MiniPass extends EE {
   }
 
   pause () {
-    this.flowing = false
+    this[FLOWING] = false
+  }
+
+  get flowing () {
+    return this[FLOWING]
   }
 
   [FLUSH] () {

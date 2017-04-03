@@ -3,6 +3,9 @@ const t = require('tap')
 
 t.test('some basic piping and writing', async t => {
   let mp = new MiniPass({ encoding: 'base64' })
+  t.notOk(mp.flowing)
+  mp.flowing = true
+  t.notOk(mp.flowing)
   t.equal(mp.encoding, 'base64')
   mp.encoding = null
   t.equal(mp.encoding, null)
