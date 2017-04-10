@@ -162,7 +162,7 @@ class MiniPass extends EE {
     }
   }
 
-  emit (ev, data, ...args) {
+  emit (ev, data) {
     if (ev === 'data') {
       if (this[DECODER])
         data = this[DECODER].write(data)
@@ -187,8 +187,15 @@ class MiniPass extends EE {
       this[EMITTED_END] = true
     }
 
+    const args = [ ev, data ]
+    if (arguments.length > 2) {
+      for (let i = 2; i < arguments.length; i++) {
+        args[i] = arguments[i]
+      }
+    }
+
     try {
-      return super.emit(ev, data, ...args)
+      return super.emit.apply(this, args)
     } finally {
       if (ev !== 'end')
         this[MAYBE_EMIT_END]()

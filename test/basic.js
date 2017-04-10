@@ -215,3 +215,13 @@ t.test('pipe to stderr does not throw', t => {
     })
   })
 })
+
+t.test('emit works with many args', t => {
+  const mp = new MiniPass()
+  t.plan(2)
+  mp.on('foo', function (a, b, c, d, e, f, g) {
+    t.same([a,b,c,d,e,f,g], [1,2,3,4,5,6,7])
+    t.equal(arguments.length, 7)
+  })
+  mp.emit('foo', 1, 2, 3, 4, 5, 6, 7)
+})
