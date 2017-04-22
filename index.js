@@ -86,6 +86,8 @@ class MiniPass extends EE {
     }
 
     this.emit('data', chunk)
+    if (!this.buffer.length)
+      this.emit('drain')
     return chunk
   }
 
