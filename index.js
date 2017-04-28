@@ -11,6 +11,7 @@ const SD = require('string_decoder').StringDecoder
 const ENCODING = Symbol('encoding')
 const DECODER = Symbol('decoder')
 const FLOWING = Symbol('flowing')
+const RESUME = Symbol('resume')
 
 class MiniPass extends EE {
   constructor (options) {
@@ -105,12 +106,17 @@ class MiniPass extends EE {
       this[MAYBE_EMIT_END]()
   }
 
-  resume () {
+  // don't let the internal resume be overwritten
+  [RESUME] () {
     this[FLOWING] = true
     if (this.buffer.length)
       this[FLUSH]()
     else
       this[MAYBE_EMIT_END]()
+  }
+
+  resume () {
+    return this[RESUME]()
   }
 
   pause () {
@@ -134,8 +140,8 @@ class MiniPass extends EE {
 
   pipe (dest) {
     this.pipes.push(dest)
-    dest.on('drain', _ => this.resume())
-    this.resume()
+    dest.on('drain', _ => this[RESUME]())
+    this[RESUME]()
     return dest
   }
 
@@ -147,8 +153,9 @@ class MiniPass extends EE {
     try {
       return super.on(ev, fn)
     } finally {
-      if (ev === 'data' && !this.pipes.length && !this.flowing)
-        this.resume()
+      if (ev === 'data' && !this.pipes.length && !this.flowing) {
+        this[RESUME]()
+      }
     }
   }
 
