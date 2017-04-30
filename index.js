@@ -53,7 +53,7 @@ class MiniPass extends EE {
 
     try {
       return this.flowing
-        ? (this.emit('data', chunk), true)
+        ? (this.emit('data', chunk), this.flowing)
         : (this.buffer.push(chunk), false)
     } finally {
       this.emit('readable')
@@ -87,7 +87,7 @@ class MiniPass extends EE {
     }
 
     this.emit('data', chunk)
-    if (!this.buffer.length)
+    if (!this.buffer.length && !this[EOF])
       this.emit('drain')
     return chunk
   }
@@ -111,8 +111,10 @@ class MiniPass extends EE {
     this[FLOWING] = true
     if (this.buffer.length)
       this[FLUSH]()
-    else
+    else if (this[EOF])
       this[MAYBE_EMIT_END]()
+    else
+      this.emit('drain')
   }
 
   resume () {
@@ -130,7 +132,7 @@ class MiniPass extends EE {
   [FLUSH] () {
     do {} while (this[FLUSHCHUNK](this.buffer.shift()))
 
-    if (!this.buffer.length)
+    if (!this.buffer.length && !this[EOF])
       this.emit('drain')
   }
 

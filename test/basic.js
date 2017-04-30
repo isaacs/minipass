@@ -1,5 +1,6 @@
 const MiniPass = require('../')
 const t = require('tap')
+const EE = require('events').EventEmitter
 
 t.test('some basic piping and writing', async t => {
   let mp = new MiniPass({ encoding: 'base64' })
@@ -22,7 +23,7 @@ t.test('some basic piping and writing', async t => {
   t.ok(sawDestData, 'got data becasue pipe() flushes')
   t.equal(mp.write('bye'), true, 'write() returns true when flowing')
   dest.pause()
-  t.equal(mp.write('after pause'), true, 'true when dest is paused')
+  t.equal(mp.write('after pause'), false, 'false when dest is paused')
   t.equal(mp.write('after false'), false, 'false when not flowing')
   t.equal(dest.buffer.length, 1, '1 item is buffered in dest')
   t.equal(mp.buffer.length, 1, '1 item buffered in src')
@@ -224,4 +225,32 @@ t.test('emit works with many args', t => {
     t.equal(arguments.length, 7)
   })
   mp.emit('foo', 1, 2, 3, 4, 5, 6, 7)
+})
+
+t.test('emit drain on resume, even if no flush', t => {
+  const mp = new MiniPass()
+  mp.encoding = 'utf8'
+
+  const chunks = []
+  class SlowStream extends EE {
+    write (chunk) {
+      chunks.push(chunk)
+      setTimeout(_ => this.emit('drain'))
+      return false
+    }
+    end () { return this.write() }
+  }
+
+  const ss = new SlowStream()
+
+  mp.pipe(ss)
+  t.ok(mp.flowing, 'flowing, because piped')
+  t.equal(mp.write('foo'), false, 'write() returns false, backpressure')
+  t.equal(mp.buffer.length, 0, 'buffer len is 0')
+  t.equal(mp.flowing, false, 'flowing false, awaiting drain')
+  t.same(chunks, ['foo'], 'chunk made it through')
+  mp.once('drain', _ => {
+    t.pass('received mp drain event')
+    t.end()
+  })
 })
