@@ -27,6 +27,61 @@ class MiniPass extends EE {
     this[EMITTED_END] = false
   }
 
+  get _readableState () {
+    const self = this
+    return {
+      objectMode: false,
+      highWaterMark: Number.MAX_SAFE_INTEGER,
+      buffer: self.buffer,
+      get length () {
+        return self.buffer.map(n => n.length).reduce((a,b) => a + b, 0)
+      },
+      get pipes () { return self.pipes.toArray() },
+      get pipesCount () { return self.pipes.length },
+      get flowing () { return self.flowing },
+      get ended () { return self[EOF] },
+      get endEmitted () { return self.emittedEnd },
+      reading: false,
+      sync: false,
+      needReadable: true,
+      readableListening: true,
+      resumeScheduled: true,
+      defaultEncoding: 'utf8',
+      get ranOut () { return self.buffer.length === 0 },
+      awaitDrain: 0,
+      readingMore: false,
+      get encoding () { return self.encoding }
+    }
+  }
+
+  get _writableState () {
+    const self = this
+    return {
+      objectMode: false,
+      highWaterMark: Number.MAX_SAFE_INTEGER,
+      needDrain: false,
+      get ending () { return self[EOF] },
+      get ended () { return self[EOF] },
+      get finished () { return self.emittedEnd },
+      decodeStrings: true,
+      defaultEncoding: 'utf8',
+      get length () {
+        return self.buffer.map(n => n.length).reduce((a,b) => a + b, 0)
+      },
+      writing: false,
+      corked: false,
+      sync: false,
+      bufferProcessing: false,
+      writelen: 0,
+      bufferedRequest: null,
+      lastBufferedRequest: null,
+      pendingcb: 0,
+      get prefinished () { return self[EOF] },
+      errorEmitted: false,
+      bufferedRequestCount: 0
+    }
+  }
+
   get encoding () { return this[ENCODING] }
   set encoding (enc) {
     if (enc !== this[ENCODING])
@@ -38,8 +93,8 @@ class MiniPass extends EE {
     this.encoding = enc
   }
 
-  get writable () { return true }
-  get readable () { return true }
+  get writable () { return !this[EOF] }
+  get readable () { return !this[EMITTED_END] }
 
   write (chunk, encoding, cb) {
     if (this[EOF])
@@ -168,7 +223,8 @@ class MiniPass extends EE {
   [MAYBE_EMIT_END] () {
     if (!this[EMITTED_END] && this.buffer.length === 0 && this[EOF]) {
       this.emit('end')
-      this.emit('finished')
+      this.emit('prefinish')
+      this.emit('finish')
       this.emit('close')
     }
   }
