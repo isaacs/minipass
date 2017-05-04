@@ -22,6 +22,9 @@ This is not a `through` or `through2` stream.  It doesn't transform
 the data.  It also assumes that the data will be Buffers or strings.
 It doesn't support object mode.
 
+For an example of a stream that extends MiniPass to provide transform
+capabilities, check out [minizlib](http://npm.im/minizlib).
+
 ## USAGE
 
 ```js
