@@ -4,6 +4,7 @@ const Yallist = require('yallist')
 const EOF = Symbol('EOF')
 const MAYBE_EMIT_END = Symbol('maybeEmitEnd')
 const EMITTED_END = Symbol('emittedEnd')
+const CLOSED = Symbol('closed')
 const READ = Symbol('read')
 const FLUSH = Symbol('flush')
 const FLUSHCHUNK = Symbol('flushChunk')
@@ -25,61 +26,9 @@ class MiniPass extends EE {
     this[DECODER] = this[ENCODING] ? new SD(this[ENCODING]) : null
     this[EOF] = false
     this[EMITTED_END] = false
-  }
-
-  get _readableState () {
-    const self = this
-    return {
-      objectMode: false,
-      highWaterMark: Number.MAX_SAFE_INTEGER,
-      buffer: self.buffer,
-      get length () {
-        return self.buffer.map(n => n.length).reduce((a,b) => a + b, 0)
-      },
-      get pipes () { return self.pipes.toArray() },
-      get pipesCount () { return self.pipes.length },
-      get flowing () { return self.flowing },
-      get ended () { return self[EOF] },
-      get endEmitted () { return self.emittedEnd },
-      reading: false,
-      sync: false,
-      needReadable: true,
-      readableListening: true,
-      resumeScheduled: true,
-      defaultEncoding: 'utf8',
-      get ranOut () { return self.buffer.length === 0 },
-      awaitDrain: 0,
-      readingMore: false,
-      get encoding () { return self.encoding }
-    }
-  }
-
-  get _writableState () {
-    const self = this
-    return {
-      objectMode: false,
-      highWaterMark: Number.MAX_SAFE_INTEGER,
-      needDrain: false,
-      get ending () { return self[EOF] },
-      get ended () { return self[EOF] },
-      get finished () { return self.emittedEnd },
-      decodeStrings: true,
-      defaultEncoding: 'utf8',
-      get length () {
-        return self.buffer.map(n => n.length).reduce((a,b) => a + b, 0)
-      },
-      writing: false,
-      corked: false,
-      sync: false,
-      bufferProcessing: false,
-      writelen: 0,
-      bufferedRequest: null,
-      lastBufferedRequest: null,
-      pendingcb: 0,
-      get prefinished () { return self[EOF] },
-      errorEmitted: false,
-      bufferedRequestCount: 0
-    }
+    this[CLOSED] = false
+    this.writable = true
+    this.readable = true
   }
 
   get encoding () { return this[ENCODING] }
@@ -92,9 +41,6 @@ class MiniPass extends EE {
   setEncoding (enc) {
     this.encoding = enc
   }
-
-  get writable () { return !this[EOF] }
-  get readable () { return !this[EMITTED_END] }
 
   write (chunk, encoding, cb) {
     if (this[EOF])
@@ -157,6 +103,7 @@ class MiniPass extends EE {
     if (cb)
       this.once('end', cb)
     this[EOF] = true
+    this.writable = false
     if (this.flowing)
       this[MAYBE_EMIT_END]()
   }
@@ -225,7 +172,8 @@ class MiniPass extends EE {
       this.emit('end')
       this.emit('prefinish')
       this.emit('finish')
-      this.emit('close')
+      if (this[CLOSED])
+        this.emit('close')
     }
   }
 
@@ -252,6 +200,12 @@ class MiniPass extends EE {
           dest.end()
       })
       this[EMITTED_END] = true
+      this.readable = false
+    } else if (ev === 'close') {
+      this[CLOSED] = true
+      // don't emit close before 'end' and 'finish'
+      if (!this[EMITTED_END])
+        return
     }
 
     const args = [ ev, data ]

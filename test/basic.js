@@ -255,132 +255,35 @@ t.test('emit drain on resume, even if no flush', t => {
   })
 })
 
-t.test('fake baroque streams state objects', t => {
-  const mp = new MiniPass({ encoding: 'utf8' })
+t.test('save close for end', t => {
+  const mp = new MiniPass()
+  let ended = false
+  mp.on('close', _ => {
+    t.equal(ended, true, 'end before close')
+    t.end()
+  })
+  mp.on('end', _ => {
+    t.equal(ended, false, 'only end once')
+    ended = true
+  })
+
+  mp.emit('close')
+  mp.end('foo')
+  t.equal(ended, false, 'no end until flushed')
+  mp.resume()
+})
+
+t.test('eos works', t => {
   const eos = require('end-of-stream')
+  const mp = new MiniPass()
 
   eos(mp, er => {
     if (er)
       throw er
-
-    t.same(mp._readableState, {
-      objectMode: false,
-      highWaterMark: Number.MAX_SAFE_INTEGER,
-      buffer: mp.buffer,
-      length: 0,
-      pipes: [],
-      pipesCount: 0,
-      flowing: false,
-      ended: true,
-      endEmitted: true,
-      reading: false,
-      sync: false,
-      needReadable: true,
-      readableListening: true,
-      resumeScheduled: true,
-      defaultEncoding: 'utf8',
-      ranOut: true,
-      awaitDrain: 0,
-      readingMore: false,
-      encoding: 'utf8'
-    })
-
     t.end()
   })
 
-  t.same(mp._readableState, {
-    objectMode: false,
-    highWaterMark: Number.MAX_SAFE_INTEGER,
-    buffer: mp.buffer,
-    length: 0,
-    pipes: [],
-    pipesCount: 0,
-    flowing: false,
-    ended: false,
-    endEmitted: false,
-    reading: false,
-    sync: false,
-    needReadable: true,
-    readableListening: true,
-    resumeScheduled: true,
-    defaultEncoding: 'utf8',
-    ranOut: true,
-    awaitDrain: 0,
-    readingMore: false,
-    encoding: 'utf8'
-  })
-
-  t.same(mp._writableState, {
-    objectMode: false,
-    highWaterMark: Number.MAX_SAFE_INTEGER,
-    needDrain: false,
-    ending: false,
-    ended: false,
-    finished: false,
-    decodeStrings: true,
-    defaultEncoding: 'utf8',
-    length: 0,
-    writing: false,
-    corked: false,
-    sync: false,
-    bufferProcessing: false,
-    writelen: 0,
-    bufferedRequest: null,
-    lastBufferedRequest: null,
-    pendingcb: 0,
-    prefinished: false,
-    errorEmitted: false,
-    bufferedRequestCount: 0
-  })
-
-  mp.write('hello')
-
-  t.same(mp._readableState, {
-    objectMode: false,
-    highWaterMark: Number.MAX_SAFE_INTEGER,
-    buffer: mp.buffer,
-    length: 5,
-    pipes: [],
-    pipesCount: 0,
-    flowing: false,
-    ended: false,
-    endEmitted: false,
-    reading: false,
-    sync: false,
-    needReadable: true,
-    readableListening: true,
-    resumeScheduled: true,
-    defaultEncoding: 'utf8',
-    ranOut: false,
-    awaitDrain: 0,
-    readingMore: false,
-    encoding: 'utf8'
-  })
-
-  mp.end()
-
-  t.same(mp._writableState, {
-    objectMode: false,
-    highWaterMark: Number.MAX_SAFE_INTEGER,
-    needDrain: false,
-    ending: true,
-    ended: true,
-    finished: false,
-    decodeStrings: true,
-    defaultEncoding: 'utf8',
-    length: 5,
-    writing: false,
-    corked: false,
-    sync: false,
-    bufferProcessing: false,
-    writelen: 0,
-    bufferedRequest: null,
-    lastBufferedRequest: null,
-    pendingcb: 0,
-    prefinished: true,
-    errorEmitted: false,
-    bufferedRequestCount: 0
-  })
-
-  mp.read()
+  mp.emit('close')
+  mp.end('foo')
+  mp.resume()
 })
