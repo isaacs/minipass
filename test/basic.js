@@ -287,3 +287,22 @@ t.test('eos works', t => {
   mp.end('foo')
   mp.resume()
 })
+
+t.test('bufferLength property', t => {
+  const eos = require('end-of-stream')
+  const mp = new MiniPass()
+  mp.write('a')
+  mp.write('a')
+  mp.write('a')
+  mp.write('a')
+  mp.write('a')
+  mp.write('a')
+
+  t.equal(mp.bufferLength, 6)
+  t.equal(mp.read(7), null)
+  t.equal(mp.read(3).toString(), 'aaa')
+  t.equal(mp.bufferLength, 3)
+  t.equal(mp.read().toString(), 'aaa')
+  t.equal(mp.bufferLength, 0)
+  t.end()
+})

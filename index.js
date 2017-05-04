@@ -13,6 +13,9 @@ const ENCODING = Symbol('encoding')
 const DECODER = Symbol('decoder')
 const FLOWING = Symbol('flowing')
 const RESUME = Symbol('resume')
+const BUFFERLENGTH = Symbol('bufferLength')
+const BUFFERPUSH = Symbol('bufferPush')
+const BUFFERSHIFT = Symbol('bufferShift')
 
 class MiniPass extends EE {
   constructor (options) {
@@ -29,7 +32,10 @@ class MiniPass extends EE {
     this[CLOSED] = false
     this.writable = true
     this.readable = true
+    this[BUFFERLENGTH] = 0
   }
+
+  get bufferLength () { return this[BUFFERLENGTH] }
 
   get encoding () { return this[ENCODING] }
   set encoding (enc) {
@@ -55,7 +61,7 @@ class MiniPass extends EE {
     try {
       return this.flowing
         ? (this.emit('data', chunk), this.flowing)
-        : (this.buffer.push(chunk), false)
+        : (this[BUFFERPUSH](chunk), false)
     } finally {
       this.emit('readable')
       if (cb)
@@ -65,11 +71,13 @@ class MiniPass extends EE {
 
   read (n) {
     try {
-      if (!this.buffer.length || n === 0)
+      if (this[BUFFERLENGTH] === 0 || n === 0 || n > this[BUFFERLENGTH])
         return null
 
       if (this.buffer.length > 1)
-        this.buffer = new Yallist([Buffer.concat(Array.from(this.buffer))])
+        this.buffer = new Yallist([
+          Buffer.concat(Array.from(this.buffer), this[BUFFERLENGTH])
+        ])
 
       return this[READ](n || null, this.buffer.head.value)
     } finally {
@@ -78,13 +86,12 @@ class MiniPass extends EE {
   }
 
   [READ] (n, chunk) {
-    if (n > chunk.length)
-      return null
-    else if (n === chunk.length || n === null)
-      this.buffer.pop()
+    if (n === chunk.length || n === null)
+      this[BUFFERSHIFT]()
     else {
       this.buffer.head.value = chunk.slice(n)
       chunk = chunk.slice(0, n)
+      this[BUFFERLENGTH] -= n
     }
 
     this.emit('data', chunk)
@@ -131,8 +138,20 @@ class MiniPass extends EE {
     return this[FLOWING]
   }
 
+  [BUFFERPUSH] (chunk) {
+    this[BUFFERLENGTH] += chunk.length
+    return this.buffer.push(chunk)
+  }
+
+  [BUFFERSHIFT] () {
+    if (this.buffer.length)
+      this[BUFFERLENGTH] -= this.buffer.head.value.length
+    return this.buffer.shift()
+  }
+
+
   [FLUSH] () {
-    do {} while (this[FLUSHCHUNK](this.buffer.shift()))
+    do {} while (this[FLUSHCHUNK](this[BUFFERSHIFT]()))
 
     if (!this.buffer.length && !this[EOF])
       this.emit('drain')
@@ -208,7 +227,9 @@ class MiniPass extends EE {
         return
     }
 
-    const args = [ ev, data ]
+    const args = new Array(arguments.length)
+    args[0] = ev
+    args[1] = data
     if (arguments.length > 2) {
       for (let i = 2; i < arguments.length; i++) {
         args[i] = arguments[i]
