@@ -118,6 +118,7 @@ class MiniPass extends EE {
   // don't let the internal resume be overwritten
   [RESUME] () {
     this[FLOWING] = true
+    this.emit('resume')
     if (this.buffer.length)
       this[FLUSH]()
     else if (this[EOF])

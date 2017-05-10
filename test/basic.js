@@ -306,3 +306,13 @@ t.test('bufferLength property', t => {
   t.equal(mp.bufferLength, 0)
   t.end()
 })
+
+t.test('emit resume event on resume', t => {
+  const mp = new MiniPass()
+  t.plan(3)
+  mp.on('resume', _ => t.pass('got resume event'))
+  mp.end('asdf')
+  t.equal(mp.flowing, false, 'not flowing yet')
+  mp.resume()
+  t.equal(mp.flowing, true, 'flowing after resume')
+})
