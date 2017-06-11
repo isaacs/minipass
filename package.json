@@ -8,7 +8,8 @@
   },
   "devDependencies": {
     "end-of-stream": "^1.4.0",
-    "tap": "10"
+    "tap": "10",
+    "through2": "^2.0.3"
   },
   "scripts": {
     "test": "tap test/*.js --100",
