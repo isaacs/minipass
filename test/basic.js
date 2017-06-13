@@ -316,3 +316,54 @@ t.test('emit resume event on resume', t => {
   mp.resume()
   t.equal(mp.flowing, true, 'flowing after resume')
 })
+
+t.test('objectMode', t => {
+  const mp = new MiniPass({ objectMode: true })
+  const a = { a: 1 }
+  const b = { b: 1 }
+  const out = []
+  mp.on('data', c => out.push(c))
+  mp.on('end', _ => {
+    t.equal(out.length, 2)
+    t.equal(out[0], a)
+    t.equal(out[1], b)
+    t.same(out, [ { a: 1 }, { b: 1 } ], 'objs not munged')
+    t.end()
+  })
+  t.ok(mp.write(a))
+  t.ok(mp.write(b))
+  mp.end()
+})
+
+t.test('objectMode no encoding', t => {
+  const mp = new MiniPass({
+    objectMode: true,
+    encoding: 'utf8'
+  })
+  t.equal(mp.encoding, null)
+  const a = { a: 1 }
+  const b = { b: 1 }
+  const out = []
+  mp.on('data', c => out.push(c))
+  mp.on('end', _ => {
+    t.equal(out.length, 2)
+    t.equal(out[0], a)
+    t.equal(out[1], b)
+    t.same(out, [ { a: 1 }, { b: 1 } ], 'objs not munged')
+    t.end()
+  })
+  t.ok(mp.write(a))
+  t.ok(mp.write(b))
+  mp.end()
+})
+
+t.test('objectMode read() and buffering', t => {
+  const mp = new MiniPass({ objectMode: true })
+  const a = { a: 1 }
+  const b = { b: 1 }
+  t.notOk(mp.write(a))
+  t.notOk(mp.write(b))
+  t.equal(mp.read(2), a)
+  t.equal(mp.read(), b)
+  t.end()
+})

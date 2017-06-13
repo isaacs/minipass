@@ -19,8 +19,11 @@ There is also no `unpipe()` method.  Once you start piping, there is
 no stopping it!
 
 This is not a `through` or `through2` stream.  It doesn't transform
-the data.  It also assumes that the data will be Buffers or strings.
-It doesn't support object mode.
+the data, it just passes it right through.
+
+If you set `objectMode: true` in the options, then whatever is written
+will be emitted.  Otherwise, it'll do a minimal amount of Buffer
+copying to ensure proper Streams semantics when `read(n)` is called.
 
 For an example of a stream that extends MiniPass to provide transform
 capabilities, check out [minizlib](http://npm.im/minizlib).

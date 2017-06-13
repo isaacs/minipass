@@ -16,6 +16,7 @@ const RESUME = Symbol('resume')
 const BUFFERLENGTH = Symbol('bufferLength')
 const BUFFERPUSH = Symbol('bufferPush')
 const BUFFERSHIFT = Symbol('bufferShift')
+const OBJECTMODE = Symbol('objectMode')
 
 class MiniPass extends EE {
   constructor (options) {
@@ -23,7 +24,11 @@ class MiniPass extends EE {
     this[FLOWING] = false
     this.pipes = new Yallist()
     this.buffer = new Yallist()
-    this[ENCODING] = options && options.encoding || null
+    this[OBJECTMODE] = options && options.objectMode || false
+    if (this[OBJECTMODE])
+      this[ENCODING] = null
+    else
+      this[ENCODING] = options && options.encoding || null
     if (this[ENCODING] === 'buffer')
       this[ENCODING] = null
     this[DECODER] = this[ENCODING] ? new SD(this[ENCODING]) : null
@@ -55,7 +60,9 @@ class MiniPass extends EE {
     if (typeof encoding === 'function')
       cb = encoding, encoding = 'utf8'
 
-    if (typeof chunk === 'string')
+    // XXX fast-path writing strings of same encoding to a stream with
+    // an empty buffer, skipping the buffer/decoder dance
+    if (typeof chunk === 'string' && !this[OBJECTMODE])
       chunk = new Buffer(chunk, encoding)
 
     try {
@@ -74,7 +81,10 @@ class MiniPass extends EE {
       if (this[BUFFERLENGTH] === 0 || n === 0 || n > this[BUFFERLENGTH])
         return null
 
-      if (this.buffer.length > 1)
+      if (this[OBJECTMODE])
+        n = null
+
+      if (this.buffer.length > 1 && !this[OBJECTMODE])
         this.buffer = new Yallist([
           Buffer.concat(Array.from(this.buffer), this[BUFFERLENGTH])
         ])
@@ -140,16 +150,22 @@ class MiniPass extends EE {
   }
 
   [BUFFERPUSH] (chunk) {
-    this[BUFFERLENGTH] += chunk.length
+    if (this[OBJECTMODE])
+      this[BUFFERLENGTH] += 1
+    else
+      this[BUFFERLENGTH] += chunk.length
     return this.buffer.push(chunk)
   }
 
   [BUFFERSHIFT] () {
-    if (this.buffer.length)
-      this[BUFFERLENGTH] -= this.buffer.head.value.length
+    if (this.buffer.length) {
+      if (this[OBJECTMODE])
+        this[BUFFERLENGTH] -= 1
+      else
+        this[BUFFERLENGTH] -= this.buffer.head.value.length
+    }
     return this.buffer.shift()
   }
-
 
   [FLUSH] () {
     do {} while (this[FLUSHCHUNK](this[BUFFERSHIFT]()))
@@ -199,6 +215,8 @@ class MiniPass extends EE {
 
   emit (ev, data) {
     if (ev === 'data') {
+      // XXX fast-path writing strings of same encoding to a stream with
+      // an empty buffer, skipping the buffer/decoder dance
       if (this[DECODER])
         data = this[DECODER].write(data)
 
