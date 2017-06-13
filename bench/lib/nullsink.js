@@ -1,11 +1,8 @@
 'use strict'
-const stream = require('stream')
+const EE = require('events').EventEmitter
 
-module.exports = class NullSink extends stream.Writable {
-  constructor () {
-    super({objectMode: true})
-  }
-  _write (data, encoding, next) {
+module.exports = class NullSink extends EE {
+  write (data, encoding, next) {
     if (next) next()
     return true
   }

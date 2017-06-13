@@ -4,6 +4,7 @@ const iterations = +process.env.BENCH_TEST_ITERATION || 100
 const testCount = +process.env.BENCH_TEST_COUNT || 20
 
 const tests = [
+  'baseline',
   'through2',
   'extend-through2',
   'minipass',
@@ -11,6 +12,7 @@ const tests = [
   'passthrough',
   'extend-transform'
 ]
+
 const manyOpts = [ 'many', 'single' ]
 const typeOpts = [ 'buffer', 'string', 'object' ]
 
@@ -25,7 +27,8 @@ const main = () => {
     manyOpts.forEach(many =>
       typeOpts.forEach(type =>
         new Array(testCount).join(',').split(',').forEach(() =>
-          testSet.push([t, many, type])))))
+        t !== 'baseline' || (many === 'single' && type === 'object')
+          ? testSet.push([t, many, type]) : null))))
 
   let didFirst = false
   const mainRunTest = t => {
@@ -78,16 +81,16 @@ const afterMain = results => {
     const median = k.length % 2 ? k[Math.floor(k.length / 2)] :
       (k[k.length/2] + k[k.length/2+1])/2
     console.log(
-      '%s\t%d\t%d\t%d\t%d\t%s', test, mean, median, stdev, range,
+      '%s\t%d\t%d\t%d\t%d\t%s', test, round(mean), round(median), round(stdev), round(range),
       k.join('\t'))
   })
 }
 
+const round = num => Math.round(num * 1000)/1000
+
 const test = (testname, many, type) => {
   const timer = require('./lib/timer.js')
   const Class = getClass(testname)
-  if (!Class)
-    throw new Error('unknown test: ' + testname)
 
   const done = timer()
   runTest(Class, many, type, iterations, done)
@@ -117,16 +120,18 @@ const runTest = (Class, many, type, iterations, done) => {
       }
 
     const out = new Nullsink().on('finish', after)
-    let sink = new Class(opt)
+    let sink = Class ? new Class(opt) : out
 
-    if (many)
+    if (many && Class)
       sink = sink
         .pipe(new Class(opt))
         .pipe(new Class(opt))
         .pipe(new Class(opt))
         .pipe(new Class(opt))
 
-    sink.pipe(out)
+    if (sink !== out)
+      sink.pipe(out)
+
     new Numbers(opt).pipe(sink)
 
     // keep tight-looping if the stream is done already
