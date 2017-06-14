@@ -45,11 +45,11 @@ class MiniPass extends EE {
   get encoding () { return this[ENCODING] }
   set encoding (enc) {
     if (this[OBJECTMODE])
-      this.emit('error', new Error('cannot set encoding in objectMode'))
+      throw new Error('cannot set encoding in objectMode')
 
     if (this[ENCODING] && enc !== this[ENCODING] &&
         (this[DECODER] && this[DECODER].lastNeed || this[BUFFERLENGTH]))
-      this.emit('error', new Error('cannot change encoding'))
+      throw new Error('cannot change encoding')
 
     if (this[ENCODING] !== enc) {
       this[DECODER] = enc ? new SD(enc) : null
