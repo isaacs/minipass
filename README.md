@@ -3,6 +3,10 @@
 A _very_ minimal implementation of a [PassThrough
 stream](https://nodejs.org/api/stream.html#stream_class_stream_passthrough)
 
+[It's very
+fast](https://docs.google.com/spreadsheets/d/1oObKSrVwLX_7Ut4Z6g3fZW-AX1j1-k6w-cDsrkaSbHM/edit#gid=0)
+for objects, strings, and buffers.
+
 Supports pipe()ing (including multi-pipe() and backpressure
 transmission), buffering data until either a `data` event handler or
 `pipe()` is added (so you don't lose the first chunk), and most other
