@@ -408,3 +408,21 @@ t.test('objectMode read() and buffering', t => {
 t.test('set encoding in object mode throws', async t =>
   t.throws(_ => new MiniPass({ objectMode: true }).encoding = 'utf8',
            new Error('cannot set encoding in objectMode')))
+
+t.test('set encoding again throws', async t =>
+  t.throws(_ => {
+    const mp = new MiniPass({ encoding: 'hex' })
+    mp.write('ok')
+    mp.encoding = 'utf8'
+  }, new Error('cannot change encoding')))
+
+t.test('set encoding with existing buffer', async t => {
+  const mp = new MiniPass()
+  const butterfly = '🦋'
+  const butterbuf = new Buffer(butterfly)
+  mp.write(butterbuf.slice(0, 1))
+  mp.write(butterbuf.slice(1, 2))
+  mp.setEncoding('utf8')
+  mp.write(butterbuf.slice(2))
+  t.equal(mp.read(), butterfly)
+})
