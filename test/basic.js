@@ -104,17 +104,54 @@ t.test('read method', async t => {
   mp.write(new Buffer(butterfly))
   t.equal(mp.read(5), null)
   t.equal(mp.read(0), null)
-  t.same(mp.read(4), new Buffer(butterfly))
+  t.same(mp.read(2), butterfly)
 })
 
 t.test('read with no args', async t => {
-  const butterfly = '🦋'
-  const mp = new MiniPass({ encoding: 'utf8' })
-  mp.on('data', c => t.equal(c, butterfly))
-  mp.pause()
-  mp.write(new Buffer(butterfly))
-  t.same(mp.read(), new Buffer(butterfly))
-  t.equal(mp.read(), null)
+  t.test('buffer -> string', async t => {
+    const butterfly = '🦋'
+    const mp = new MiniPass({ encoding: 'utf8' })
+    mp.on('data', c => t.equal(c, butterfly))
+    mp.pause()
+    const butterbuf = new Buffer(butterfly)
+    mp.write(butterbuf.slice(0, 2))
+    mp.write(butterbuf.slice(2))
+    t.same(mp.read(), butterfly)
+    t.equal(mp.read(), null)
+  })
+
+  t.test('buffer -> buffer', async t => {
+    const butterfly = new Buffer('🦋')
+    const mp = new MiniPass()
+    mp.on('data', c => t.same(c, butterfly))
+    mp.pause()
+    mp.write(butterfly.slice(0, 2))
+    mp.write(butterfly.slice(2))
+    t.same(mp.read(), butterfly)
+    t.equal(mp.read(), null)
+  })
+
+  t.test('string -> buffer', async t => {
+    const butterfly = '🦋'
+    const butterbuf = new Buffer(butterfly)
+    const mp = new MiniPass()
+    mp.on('data', c => t.same(c, butterbuf))
+    mp.pause()
+    mp.write(butterfly)
+    t.same(mp.read(), butterbuf)
+    t.equal(mp.read(), null)
+  })
+
+  t.test('string -> string', async t => {
+    const butterfly = '🦋'
+    const mp = new MiniPass({ encoding: 'utf8' })
+    mp.on('data', c => t.equal(c, butterfly))
+    mp.pause()
+    mp.write(butterfly[0])
+    mp.write(butterfly[1])
+    t.same(mp.read(), butterfly)
+    t.equal(mp.read(), null)
+  })
 })
 
 t.test('partial read', async t => {

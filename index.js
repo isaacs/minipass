@@ -60,10 +60,19 @@ class MiniPass extends EE {
     if (typeof encoding === 'function')
       cb = encoding, encoding = 'utf8'
 
-    // XXX fast-path writing strings of same encoding to a stream with
+    if (!encoding)
+      encoding = 'utf8'
+
+    // fast-path writing strings of same encoding to a stream with
     // an empty buffer, skipping the buffer/decoder dance
-    if (typeof chunk === 'string' && !this[OBJECTMODE])
+    if (typeof chunk === 'string' && !this[OBJECTMODE] &&
+        // unless it is a string already ready for us to use
+        !(encoding === this[ENCODING] && !this[DECODER].lastNeed)) {
       chunk = new Buffer(chunk, encoding)
+    }
+
+    if (Buffer.isBuffer(chunk) && this[ENCODING])
+      chunk = this[DECODER].write(chunk)
 
     try {
       return this.flowing
@@ -84,10 +93,16 @@ class MiniPass extends EE {
       if (this[OBJECTMODE])
         n = null
 
-      if (this.buffer.length > 1 && !this[OBJECTMODE])
-        this.buffer = new Yallist([
-          Buffer.concat(Array.from(this.buffer), this[BUFFERLENGTH])
-        ])
+      if (this.buffer.length > 1 && !this[OBJECTMODE]) {
+        if (this.encoding)
+          this.buffer = new Yallist([
+            Array.from(this.buffer).join('')
+          ])
+        else
+          this.buffer = new Yallist([
+            Buffer.concat(Array.from(this.buffer), this[BUFFERLENGTH])
+          ])
+      }
 
       return this[READ](n || null, this.buffer.head.value)
     } finally {
@@ -105,8 +120,10 @@ class MiniPass extends EE {
     }
 
     this.emit('data', chunk)
+
     if (!this.buffer.length && !this[EOF])
       this.emit('drain')
+
     return chunk
   }
 
@@ -215,11 +232,6 @@ class MiniPass extends EE {
 
   emit (ev, data) {
     if (ev === 'data') {
-      // XXX fast-path writing strings of same encoding to a stream with
-      // an empty buffer, skipping the buffer/decoder dance
-      if (this[DECODER])
-        data = this[DECODER].write(data)
-
       if (!data)
         return
 
