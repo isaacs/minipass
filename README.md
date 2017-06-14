@@ -22,12 +22,15 @@ specified.
 There is also no `unpipe()` method.  Once you start piping, there is
 no stopping it!
 
-This is not a `through` or `through2` stream.  It doesn't transform
-the data, it just passes it right through.
-
 If you set `objectMode: true` in the options, then whatever is written
 will be emitted.  Otherwise, it'll do a minimal amount of Buffer
 copying to ensure proper Streams semantics when `read(n)` is called.
+
+This is not a `through` or `through2` stream.  It doesn't transform
+the data, it just passes it right through.  If you want to transform
+the data, extend the class, and override the `write()` method.  Once
+you're done transforming the data however you want, call
+`super.write()` with the transform output.
 
 For an example of a stream that extends MiniPass to provide transform
 capabilities, check out [minizlib](http://npm.im/minizlib).
