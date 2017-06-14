@@ -5,10 +5,10 @@ const testCount = +process.env.BENCH_TEST_COUNT || 20
 
 const tests = [
   'baseline',
-  'through2',
-  'extend-through2',
   'minipass',
   'extend-minipass',
+  'through2',
+  'extend-through2',
   'passthrough',
   'extend-transform'
 ]
@@ -65,23 +65,26 @@ const main = () => {
 }
 
 const afterMain = results => {
-  console.log('test\tmany\ttype\tmean\tmedian\tstdev\trange\traw\t' +
-              'iterations=%d\tcount=%d', iterations, testCount)
+  console.log('test\tmany\ttype\tops/s\tmean\tmedian\tmax\tmin' +
+              '\tstdev\trange\traw')
   // get the mean, median, stddev, and range of each test
   Object.keys(results).forEach(test => {
-    const k = results[test].sort()
+    const k = results[test].sort((a, b) => a - b)
     const min = k[0]
     const max = k[ k.length - 1 ]
     const range = max - min
     const sum = k.reduce((a,b) => a + b, 0)
     const mean = sum / k.length
+    const ops = iterations / mean * 1000
     const devs = k.map(n => n - mean).map(n => n * n)
     const avgdev = devs.reduce((a,b) => a + b, 0) / k.length
     const stdev = Math.pow(avgdev, 0.5)
     const median = k.length % 2 ? k[Math.floor(k.length / 2)] :
       (k[k.length/2] + k[k.length/2+1])/2
     console.log(
-      '%s\t%d\t%d\t%d\t%d\t%s', test, round(mean), round(median), round(stdev), round(range),
+      '%s\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%s', test, round(ops),
+      round(mean), round(median),
+      max, min, round(stdev), round(range),
       k.join('\t'))
   })
 }
