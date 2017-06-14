@@ -404,3 +404,7 @@ t.test('objectMode read() and buffering', t => {
   t.equal(mp.read(), b)
   t.end()
 })
+
+t.test('set encoding in object mode throws', async t =>
+  t.throws(_ => new MiniPass({ objectMode: true }).encoding = 'utf8',
+           new Error('cannot set encoding in objectMode')))
