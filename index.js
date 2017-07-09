@@ -206,8 +206,10 @@ class MiniPass extends EE {
     return chunk ? (this.emit('data', chunk), this.flowing) : false
   }
 
-  pipe (dest) {
-    this.pipes.push(dest)
+  pipe (dest, opts) {
+    if (dest === process.stdout || dest === process.stderr)
+      (opts = opts || {}).end = false
+    this.pipes.push({ dest: dest, opts: opts })
     dest.on('drain', _ => this[RESUME]())
     this[RESUME]()
     return dest
@@ -247,18 +249,18 @@ class MiniPass extends EE {
         return
 
       if (this.pipes.length)
-        this.pipes.forEach(dest => dest.write(data) || this.pause())
+        this.pipes.forEach(p => p.dest.write(data) || this.pause())
     } else if (ev === 'end') {
       if (this[DECODER]) {
         data = this[DECODER].end()
         if (data) {
-          this.pipes.forEach(dest => dest.write(data))
+          this.pipes.forEach(p => p.dest.write(data))
           super.emit('data', data)
         }
       }
-      this.pipes.forEach(dest => {
-        if (dest !== process.stdout && dest !== process.stderr)
-          dest.end()
+      this.pipes.forEach(p => {
+        if (!p.opts || p.opts.end !== false)
+          p.dest.end()
       })
       this[EMITTED_END] = true
       this.readable = false

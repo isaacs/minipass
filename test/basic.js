@@ -426,3 +426,13 @@ t.test('set encoding with existing buffer', async t => {
   mp.write(butterbuf.slice(2))
   t.equal(mp.read(), butterfly)
 })
+
+t.test('end:false', async t => {
+  t.plan(1)
+  const mp = new MiniPass({ encoding: 'utf8' })
+  const d = new MiniPass({ encoding: 'utf8' })
+  d.end = () => t.threw(new Error('no end no exit no way out'))
+  d.on('data', c => t.equal(c, 'this is fine'))
+  mp.pipe(d, { end: false })
+  mp.end('this is fine')
+})
