@@ -217,7 +217,7 @@ class MiniPass extends EE {
     return dest
   }
 
-  addEventHandler (ev, fn) {
+  addListener (ev, fn) {
     return this.on(ev, fn)
   }
 
