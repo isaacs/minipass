@@ -190,8 +190,8 @@ t.test('end with chunk', async t => {
   let out = ''
   const mp = new MiniPass({ encoding: 'utf8' })
   let sawEnd = false
-  mp.on('end', _ => sawEnd = true)
-  mp.addEventHandler('data', c => out += c)
+  mp.prependListener('end', _ => sawEnd = true)
+  mp.addListener('data', c => out += c)
   let endCb = false
   mp.end('ok', _ => endCb = true)
   t.equal(out, 'ok')
