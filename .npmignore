@@ -1,0 +1,5 @@
+.*.swp
+.nyc_output/
+coverage/
+test/
+bench/
