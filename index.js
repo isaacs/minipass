@@ -79,7 +79,7 @@ class MiniPass extends EE {
     if (typeof chunk === 'string' && !this[OBJECTMODE] &&
         // unless it is a string already ready for us to use
         !(encoding === this[ENCODING] && !this[DECODER].lastNeed)) {
-      chunk = new Buffer(chunk, encoding)
+      chunk = Buffer.from(chunk, encoding)
     }
 
     if (Buffer.isBuffer(chunk) && this[ENCODING])
