@@ -2,6 +2,16 @@ const MiniPass = require('../')
 const t = require('tap')
 const EE = require('events').EventEmitter
 
+// Buffer in node 4.x < 4.5.0 doesn't have working Buffer.from
+// or Buffer.alloc, and Buffer in node 10 deprecated the ctor.
+// .M, this is fine .\^/M..
+let B = Buffer
+/* istanbul ignore next */
+if (!B.alloc) {
+  B = require('safe-buffer').Buffer
+}
+
+
 t.test('some basic piping and writing', async t => {
   let mp = new MiniPass({ encoding: 'base64' })
   t.notOk(mp.flowing)
@@ -17,7 +27,7 @@ t.test('some basic piping and writing', async t => {
   let sawDestData = false
   dest.once('data', chunk => {
     sawDestData = true
-    t.isa(chunk, Buffer)
+    t.isa(chunk, B)
   })
   t.equal(mp.pipe(dest), dest, 'pipe returns dest')
   t.ok(sawDestData, 'got data becasue pipe() flushes')
@@ -40,7 +50,7 @@ t.test('unicode splitting', async t => {
   mp.on('data', chunk => {
     t.equal(chunk, butterfly)
   })
-  const butterbuf = Buffer.from([0xf0, 0x9f, 0xa6, 0x8b])
+  const butterbuf = B.from([0xf0, 0x9f, 0xa6, 0x8b])
   mp.write(butterbuf.slice(0, 1))
   mp.write(butterbuf.slice(1, 2))
   mp.write(butterbuf.slice(2, 3))
@@ -60,7 +70,7 @@ t.test('unicode splitting with setEncoding', async t => {
   mp.on('data', chunk => {
     t.equal(chunk, butterfly)
   })
-  const butterbuf = Buffer.from([0xf0, 0x9f, 0xa6, 0x8b])
+  const butterbuf = B.from([0xf0, 0x9f, 0xa6, 0x8b])
   mp.write(butterbuf.slice(0, 1))
   mp.write(butterbuf.slice(1, 2))
   mp.write(butterbuf.slice(2, 3))
@@ -77,7 +87,7 @@ t.test('base64 -> utf8 piping', t => {
   let out = ''
   dest.on('data', c => out += c)
   dest.on('end', _ =>
-    t.equal(Buffer.from(out, 'base64').toString('utf8'), butterfly))
+    t.equal(B.from(out, 'base64').toString('utf8'), butterfly))
   mp.write(butterfly)
   mp.end()
 })
@@ -91,7 +101,7 @@ t.test('utf8 -> base64 piping', t => {
   let out = ''
   dest.on('data', c => out += c)
   dest.on('end', _ =>
-    t.equal(Buffer.from(out, 'base64').toString('utf8'), butterfly))
+    t.equal(B.from(out, 'base64').toString('utf8'), butterfly))
   mp.write(butterfly)
   mp.end()
 })
@@ -101,7 +111,7 @@ t.test('read method', async t => {
   const mp = new MiniPass({ encoding: 'utf8' })
   mp.on('data', c => t.equal(c, butterfly))
   mp.pause()
-  mp.write(Buffer.from(butterfly))
+  mp.write(B.from(butterfly))
   t.equal(mp.read(5), null)
   t.equal(mp.read(0), null)
   t.same(mp.read(2), butterfly)
@@ -113,7 +123,7 @@ t.test('read with no args', async t => {
     const mp = new MiniPass({ encoding: 'utf8' })
     mp.on('data', c => t.equal(c, butterfly))
     mp.pause()
-    const butterbuf = Buffer.from(butterfly)
+    const butterbuf = B.from(butterfly)
     mp.write(butterbuf.slice(0, 2))
     mp.write(butterbuf.slice(2))
     t.same(mp.read(), butterfly)
@@ -121,7 +131,7 @@ t.test('read with no args', async t => {
   })
 
   t.test('buffer -> buffer', async t => {
-    const butterfly = Buffer.from('🦋')
+    const butterfly = B.from('🦋')
     const mp = new MiniPass()
     mp.on('data', c => t.same(c, butterfly))
     mp.pause()
@@ -133,7 +143,7 @@ t.test('read with no args', async t => {
 
   t.test('string -> buffer', async t => {
     const butterfly = '🦋'
-    const butterbuf = Buffer.from(butterfly)
+    const butterbuf = B.from(butterfly)
     const mp = new MiniPass()
     mp.on('data', c => t.same(c, butterbuf))
     mp.pause()
@@ -157,7 +167,7 @@ t.test('read with no args', async t => {
 t.test('partial read', async t => {
   const butterfly = '🦋'
   const mp = new MiniPass()
-  const butterbuf = Buffer.from(butterfly)
+  const butterbuf = B.from(butterfly)
   mp.write(butterbuf.slice(0, 1))
   mp.write(butterbuf.slice(1, 2))
   mp.write(butterbuf.slice(2, 3))
@@ -419,7 +429,7 @@ t.test('set encoding again throws', async t =>
 t.test('set encoding with existing buffer', async t => {
   const mp = new MiniPass()
   const butterfly = '🦋'
-  const butterbuf = Buffer.from(butterfly)
+  const butterbuf = B.from(butterfly)
   mp.write(butterbuf.slice(0, 1))
   mp.write(butterbuf.slice(1, 2))
   mp.setEncoding('utf8')

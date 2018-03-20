@@ -4,6 +4,7 @@
   "description": "minimal implementation of a PassThrough stream",
   "main": "index.js",
   "dependencies": {
+    "safe-buffer": "^5.1.1",
     "yallist": "^3.0.0"
   },
   "devDependencies": {
