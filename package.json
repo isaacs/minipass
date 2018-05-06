@@ -9,7 +9,7 @@
   },
   "devDependencies": {
     "end-of-stream": "^1.4.0",
-    "tap": "^10.7.0",
+    "tap": "^11.1.4",
     "through2": "^2.0.3"
   },
   "scripts": {
