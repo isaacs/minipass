@@ -44,3 +44,17 @@ mp.write('foo')
 mp.pipe(someOtherStream)
 mp.end('bar')
 ```
+
+### collecting
+
+```js
+mp.collect().then(all => {
+  // all is an array of all the data emitted
+  // encoding is supported in this case, so
+  // so the result will be a collection of strings if
+  // an encoding is specified, or buffers/objects if not.
+  //
+  // In an async function, you may do
+  // const data = await stream.collect()
+})
+```

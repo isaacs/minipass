@@ -27,7 +27,7 @@ if (!B.alloc) {
   B = require('safe-buffer').Buffer
 }
 
-class MiniPass extends EE {
+module.exports = class MiniPass extends EE {
   constructor (options) {
     super()
     this[FLOWING] = false
@@ -299,6 +299,14 @@ class MiniPass extends EE {
         this[MAYBE_EMIT_END]()
     }
   }
-}
 
-module.exports = MiniPass
+  // const all = await stream.collect()
+  collect () {
+    return new Promise((resolve, reject) => {
+      const buf = []
+      this.on('data', c => buf.push(c))
+      this.on('end', () => resolve(buf))
+      this.on('error', reject)
+    })
+  }
+}
