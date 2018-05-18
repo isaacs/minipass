@@ -265,6 +265,9 @@ module.exports = class MiniPass extends EE {
       if (this.pipes.length)
         this.pipes.forEach(p => p.dest.write(data) || this.pause())
     } else if (ev === 'end') {
+      this[EMITTED_END] = true
+      this.readable = false
+
       if (this[DECODER]) {
         data = this[DECODER].end()
         if (data) {
@@ -272,13 +275,12 @@ module.exports = class MiniPass extends EE {
           super.emit('data', data)
         }
       }
+
       this.pipes.forEach(p => {
         p.dest.removeListener('drain', p.ondrain)
         if (!p.opts || p.opts.end !== false)
           p.dest.end()
       })
-      this[EMITTED_END] = true
-      this.readable = false
     } else if (ev === 'close') {
       this[CLOSED] = true
       // don't emit close before 'end' and 'finish'
