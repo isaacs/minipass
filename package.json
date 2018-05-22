@@ -4,12 +4,12 @@
   "description": "minimal implementation of a PassThrough stream",
   "main": "index.js",
   "dependencies": {
-    "safe-buffer": "^5.1.1",
+    "safe-buffer": "^5.1.2",
     "yallist": "^3.0.0"
   },
   "devDependencies": {
     "end-of-stream": "^1.4.0",
-    "tap": "^11.1.4",
+    "tap": "^11.1.5",
     "through2": "^2.0.3"
   },
   "scripts": {
