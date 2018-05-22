@@ -20,7 +20,6 @@ const BUFFERLENGTH = Symbol('bufferLength')
 const BUFFERPUSH = Symbol('bufferPush')
 const BUFFERSHIFT = Symbol('bufferShift')
 const OBJECTMODE = Symbol('objectMode')
-const SILENT_END = Symbol('silentEnd')
 
 // Buffer in node 4.x < 4.5.0 doesn't have working Buffer.from
 // or Buffer.alloc, and Buffer in node 10 deprecated the ctor.
@@ -34,7 +33,6 @@ if (!B.alloc) {
 module.exports = class MiniPass extends EE {
   constructor (options) {
     super()
-    this[SILENT_END] = false
     this[FLOWING] = false
     this.pipes = new Yallist()
     this.buffer = new Yallist()
@@ -241,9 +239,9 @@ module.exports = class MiniPass extends EE {
     } finally {
       if (ev === 'data' && !this.pipes.length && !this.flowing)
         this[RESUME]()
-      else if (ev === 'end' && this[SILENT_END] && this[EMITTED_END]) {
-        this[SILENT_END] = false
+      else if (ev === 'end' && this[EMITTED_END]) {
         super.emit('end')
+        this.removeAllListeners('end')
       }
     }
   }
@@ -306,13 +304,12 @@ module.exports = class MiniPass extends EE {
     }
 
     try {
-      const ret = super.emit.apply(this, args)
-      if (ev === 'end' && ret === false)
-        this[SILENT_END] = true
-      return ret
+      return super.emit.apply(this, args)
     } finally {
       if (ev !== 'end')
         this[MAYBE_EMIT_END]()
+      else
+        this.removeAllListeners('end')
     }
   }
 
