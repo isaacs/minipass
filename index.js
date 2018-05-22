@@ -265,6 +265,9 @@ module.exports = class MiniPass extends EE {
       if (this.pipes.length)
         this.pipes.forEach(p => p.dest.write(data) || this.pause())
     } else if (ev === 'end') {
+      if (this[EMITTED_END])
+        return
+
       this[EMITTED_END] = true
       this.readable = false
 
