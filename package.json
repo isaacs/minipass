@@ -1,6 +1,6 @@
 {
   "name": "minipass",
-  "version": "2.3.4",
+  "version": "2.3.5",
   "description": "minimal implementation of a PassThrough stream",
   "main": "index.js",
   "dependencies": {
