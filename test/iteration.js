@@ -99,6 +99,164 @@ t.test('async iteration', t => {
     t.same(result, expect)
   })
 
+  t.test('multiple chunks at once, asyncly', async t => {
+    const mp = new MP()
+    let i = 6
+    const write = () => {
+      if (i === 6)
+        mp.write(Buffer.from('start\n', 'utf8'))
+      else if (i > 0)
+        mp.write('foo\n')
+      else if (i === 0) {
+        mp.end('bar\n')
+        clearInterval(inter)
+      }
+      i--
+    }
+
+    const inter = setInterval(() => {
+      write()
+      write()
+      write()
+    })
+
+    const result = []
+    for await (let x of mp)
+      result.push(x)
+
+    t.same(result.map(x => x.toString()).join(''), expect.join(''))
+  })
+
+  t.test('multiple object chunks at once, asyncly', async t => {
+    const mp = new MP({ objectMode: true })
+    let i = 6
+    const write = () => {
+      if (i === 6)
+        mp.write(['start\n'])
+      else if (i > 0)
+        mp.write(['foo\n'])
+      else if (i === 0) {
+        mp.end(['bar\n'])
+        clearInterval(inter)
+      }
+      i--
+    }
+
+    const inter = setInterval(() => {
+      write()
+      write()
+      write()
+    })
+
+    const result = []
+    for await (let x of mp)
+      result.push(x)
+
+    t.same(result.map(x => x.join('')).join(''), expect.join(''))
+  })
+
+  t.test('all chunks at once, asyncly', async t => {
+    const mp = new MP()
+    setTimeout(() => {
+      mp.write(Buffer.from('start\n', 'utf8'))
+      for (let i = 0; i < 5; i++) {
+        mp.write('foo\n')
+      }
+      mp.end('bar\n')
+    })
+
+    const result = []
+    for await (let x of mp)
+      result.push(x)
+
+    t.same(result.map(x => x.toString()).join(''), expect.join(''))
+  })
+
+  t.test('all object chunks at once, asyncly', async t => {
+    const mp = new MP({ objectMode: true })
+    setTimeout(() => {
+      mp.write(['start\n'])
+      for (let i = 0; i < 5; i++) {
+        mp.write(['foo\n'])
+      }
+      mp.end(['bar\n'])
+    })
+
+    const result = []
+    for await (let x of mp)
+      result.push(x)
+
+    t.same(result.map(x => x.join('')).join(''), expect.join(''))
+  })
+
+  t.test('all object chunks at once, syncly', async t => {
+    const mp = new MP({ objectMode: true })
+    mp.write(['start\n'])
+    for (let i = 0; i < 5; i++) {
+      mp.write(['foo\n'])
+    }
+    mp.end(['bar\n'])
+
+    const result = []
+    for await (let x of mp)
+      result.push(x)
+
+    t.same(result.map(x => x.join('')).join(''), expect.join(''))
+  })
+
+  t.test('pipe in all at once', async t => {
+    const inp = new MP({ encoding: 'utf8' })
+    const mp = new MP({ encoding: 'utf8' })
+    inp.pipe(mp)
+
+    let i = 5
+    inp.write('start\n')
+    const inter = setInterval(() => {
+      if (i --> 0)
+        inp.write(Buffer.from('foo\n', 'utf8'))
+      else {
+        inp.end('bar\n')
+        clearInterval(inter)
+      }
+    })
+
+    const result = []
+    for await (let x of mp)
+      result.push(x)
+
+    t.same(result, expect)
+  })
+
+  t.test('pipe in multiple object chunks at once, asyncly', async t => {
+    const mp = new MP({ objectMode: true })
+    const inp = new MP({ objectMode: true })
+    inp.pipe(mp)
+
+    let i = 5
+    inp.write(['start\n'])
+    const write = () => {
+      if (i > 0)
+        inp.write(['foo\n'])
+      else if (i === 0) {
+        inp.end(['bar\n'])
+        clearInterval(inter)
+      }
+      i--
+    }
+
+    const inter = setInterval(() => {
+      write()
+      write()
+      write()
+    })
+
+    const result = []
+    for await (let x of mp)
+      result.push(x)
+
+    t.same(result.map(x => x.join('')).join(''), expect.join(''))
+  })
+
   t.test('throw error', async t => {
     const mp = new MP()
     const poop = new Error('poop')

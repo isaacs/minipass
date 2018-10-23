@@ -357,7 +357,6 @@ module.exports = class MiniPass extends EE {
         this.once('error', onerr)
         this.once('end', onend)
         this.once('data', ondata)
-        this.resume()
       })
     }
 
