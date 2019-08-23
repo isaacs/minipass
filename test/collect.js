@@ -24,3 +24,20 @@ t.test('error', async t => {
   setTimeout(() => mp.emit('error', poop))
   await t.rejects(mp.collect(), poop)
 })
+
+t.test('concat strings', async t => {
+  const mp = new MP({ encoding: 'utf8' })
+  mp.write('foo')
+  mp.write('bar')
+  mp.write('baz')
+  mp.end()
+  await t.resolveMatch(mp.concat(), 'foobarbaz')
+})
+t.test('concat buffers', async t => {
+  const mp = new MP()
+  mp.write('foo')
+  mp.write('bar')
+  mp.write('baz')
+  mp.end()
+  await t.resolveMatch(mp.concat(), Buffer.from('foobarbaz'))
+})

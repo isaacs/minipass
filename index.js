@@ -324,6 +324,12 @@ module.exports = class MiniPass extends EE {
     })
   }
 
+  // const data = await stream.concat()
+  concat () {
+    return this.collect().then(chunks =>
+      this[ENCODING] ? chunks.join('') : Buffer.concat(chunks))
+  }
+
   // for await (let chunk of stream)
   [ASYNCITERATOR] () {
     const next = () => {

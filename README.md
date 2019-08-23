@@ -57,6 +57,19 @@ mp.collect().then(all => {
 })
 ```
 
+### collecting into a single blob
+
+This is a bit slower because it concatenates the data into one chunk for
+you, but if you're going to do it yourself anyway, it's convenient this
+way:
+
+```js
+mp.concat().then(onebigchunk => {
+  // onebigchunk is a string if the stream
+  // had an encoding set, or a buffer otherwise.
+})
+```
+
 ### iteration
 
 You can iterate over streams synchronously or asynchronously in
