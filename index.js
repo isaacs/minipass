@@ -320,7 +320,7 @@ module.exports = class MiniPass extends EE {
       const buf = []
       this.on('data', c => buf.push(c))
       this.on('end', () => resolve(buf))
-      this.on('error', reject)
+      this.on('error', er => reject(er))
     })
   }
 
