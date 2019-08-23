@@ -163,6 +163,7 @@ module.exports = class MiniPass extends EE {
     this.writable = false
     if (this.flowing)
       this[MAYBE_EMIT_END]()
+    return this
   }
 
   // don't let the internal resume be overwritten
