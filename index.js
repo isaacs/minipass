@@ -4,6 +4,7 @@ const Yallist = require('yallist')
 const EOF = Symbol('EOF')
 const MAYBE_EMIT_END = Symbol('maybeEmitEnd')
 const EMITTED_END = Symbol('emittedEnd')
+const EMITTING_END = Symbol('emittingEnd')
 const CLOSED = Symbol('closed')
 const READ = Symbol('read')
 const FLUSH = Symbol('flush')
@@ -46,6 +47,7 @@ module.exports = class MiniPass extends EE {
     this[DECODER] = this[ENCODING] ? new SD(this[ENCODING]) : null
     this[EOF] = false
     this[EMITTED_END] = false
+    this[EMITTING_END] = false
     this[CLOSED] = false
     this.writable = true
     this.readable = true
@@ -252,7 +254,12 @@ module.exports = class MiniPass extends EE {
   }
 
   [MAYBE_EMIT_END] () {
-    if (!this[EMITTED_END] && this.buffer.length === 0 && this[EOF]) {
+    if (!this[EMITTING_END] &&
+        !this[EMITTED_END] &&
+        this.buffer.length === 0 &&
+        this[EOF]) {
+
+      this[EMITTING_END] = true
       this.emit('end')
       this.emit('prefinish')
       this.emit('finish')
