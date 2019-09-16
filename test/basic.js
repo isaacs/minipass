@@ -182,11 +182,23 @@ t.test('write after end', async t => {
   const mp = new MiniPass()
   let sawEnd = false
   mp.on('end', _ => sawEnd = true)
-  mp.end()
+  mp.end('not empty')
   t.throws(_ => mp.write('nope'))
   t.notOk(sawEnd, 'should not get end event yet (not flowing)')
   mp.resume()
   t.ok(sawEnd, 'should get end event after resume()')
+})
+
+t.test('write after end', async t => {
+  const mp = new MiniPass()
+  let sawEnd = 0
+  mp.on('end', _ => sawEnd++)
+  mp.end() // empty
+  t.ok(mp.emittedEnd, 'emitted end event')
+  t.throws(_ => mp.write('nope'))
+  t.equal(sawEnd, 1, 'should get end event (empty stream)')
+  mp.resume()
+  t.ok(sawEnd, 2, 'should get end event again, I guess?')
 })
 
 t.test('write cb', async t => {

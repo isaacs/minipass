@@ -3,6 +3,7 @@ const EE = require('events')
 const Yallist = require('yallist')
 const EOF = Symbol('EOF')
 const MAYBE_EMIT_END = Symbol('maybeEmitEnd')
+const REMOVE_ALL_END_LISTENERS = Symbol('removeAllEndListeners')
 const EMITTED_END = Symbol('emittedEnd')
 const EMITTING_END = Symbol('emittingEnd')
 const CLOSED = Symbol('closed')
@@ -30,6 +31,14 @@ let B = Buffer
 if (!B.alloc) {
   B = require('safe-buffer').Buffer
 }
+
+// events that mean 'the stream is over'
+// these are treated specially, and re-emitted
+// if they are listened for after emitting.
+const isEndish = ev =>
+  ev === 'end' ||
+  ev === 'finish' ||
+  ev === 'prefinish'
 
 module.exports = class MiniPass extends EE {
   constructor (options) {
@@ -163,8 +172,12 @@ module.exports = class MiniPass extends EE {
       this.once('end', cb)
     this[EOF] = true
     this.writable = false
-    if (this.flowing)
-      this[MAYBE_EMIT_END]()
+
+    // if we haven't written anything, then go ahead and emit,
+    // even if we're not reading.
+    // we'll re-emit if a new 'end' listener is added anyway.
+    // This makes MP more suitable to write-only use cases.
+    this[MAYBE_EMIT_END]()
     return this
   }
 
@@ -242,9 +255,9 @@ module.exports = class MiniPass extends EE {
     } finally {
       if (ev === 'data' && !this.pipes.length && !this.flowing)
         this[RESUME]()
-      else if (ev === 'end' && this[EMITTED_END]) {
-        super.emit('end')
-        this.removeAllListeners('end')
+      else if (isEndish(ev) && this[EMITTED_END]) {
+        super.emit(ev)
+        this[REMOVE_ALL_END_LISTENERS]()
       }
     }
   }
@@ -258,13 +271,14 @@ module.exports = class MiniPass extends EE {
         !this[EMITTED_END] &&
         this.buffer.length === 0 &&
         this[EOF]) {
-
       this[EMITTING_END] = true
       this.emit('end')
       this.emit('prefinish')
       this.emit('finish')
       if (this[CLOSED])
         this.emit('close')
+      this[REMOVE_ALL_END_LISTENERS]()
+      this[EMITTING_END] = false
     }
   }
 
@@ -276,6 +290,7 @@ module.exports = class MiniPass extends EE {
       if (this.pipes.length)
         this.pipes.forEach(p => p.dest.write(data) || this.pause())
     } else if (ev === 'end') {
+      // only actual end gets this treatment
       if (this[EMITTED_END] === true)
         return
 
@@ -314,11 +329,17 @@ module.exports = class MiniPass extends EE {
     try {
       return super.emit.apply(this, args)
     } finally {
-      if (ev !== 'end')
+      if (!isEndish(ev))
         this[MAYBE_EMIT_END]()
       else
-        this.removeAllListeners('end')
+        this[REMOVE_ALL_END_LISTENERS]()
     }
+  }
+
+  [REMOVE_ALL_END_LISTENERS] () {
+    this.removeAllListeners('end')
+    this.removeAllListeners('prefinish')
+    this.removeAllListeners('finish')
   }
 
   // const all = await stream.collect()
