@@ -30,8 +30,66 @@ the data, extend the class, and override the `write()` method.  Once
 you're done transforming the data however you want, call
 `super.write()` with the transform output.
 
-For an example of a stream that extends MiniPass to provide transform
-capabilities, check out [minizlib](http://npm.im/minizlib).
+For some examples of streams that extend MiniPass in various ways, check
+out:
+
+- [minizlib](http://npm.im/minizlib)
+- [fs-minipass](http://npm.im/fs-minipass)
+- [tar](http://npm.im/tar)
+- [minipass-collect](http://npm.im/minipass-collect)
+- [minipass-flush](http://npm.im/minipass-flush)
+- [minipass-pipeline](http://npm.im/minipass-pipeline)
+- [tap](http://npm.im/tap)
+- [tap-parser](http://npm.im/tap)
+- [treport](http://npm.im/tap)
+
+## Differences from Node.js Streams
+
+There are several things that make Minipass streams different from (and in
+some ways superior to) Node.js core streams.
+
+### Timing
+
+Minipass streams are designed to support synchronous use-cases.  Thus, data
+is emitted as soon as it is available, always.  It is buffered until read,
+but no longer.  Another way to look at it is that Minipass streams are
+exactly as synchronous as the logic that writes into them.
+
+This can be surprising if your code relies on `PassThrough.write()` always
+providing data on the next tick rather than the current one, or being able
+to call `resume()` and not have the entire buffer disappear immediately.
+
+However, without this synchronicity guarantee, there would be no way for
+Minipass to achieve the speeds it does, or support the synchronous use
+cases that it does.  Simply put, waiting takes time.
+
+This non-deferring approach makes Minipass streams much easier to reason
+about, especially in the context of Promises and other flow-control
+mechanisms.
+
+### No High/Low Water Marks
+
+Node.js core streams will optimistically fill up a buffer, returning `true`
+on all writes until the limit is hit, even if the data has nowhere to go.
+Then, they will not attempt to draw more data in until the buffer size dips
+below a minimum value.
+
+Minipass streams are much simpler.  The `write()` method will return `true`
+if the data has somewhere to go (which is to say, given the timing
+guarantees, that the data is already there by the time `write()` returns).
+
+If the data has nowhere to go, then `write()` returns false, and the data
+sits in a buffer, to be drained out immediately as soon as anyone consumes
+it.
+
+### Emit `end` When Asked
+
+If you do `stream.on('end', someFunction)`, and the stream has already
+emitted `end`, then it will emit it again.
+
+To prevent calling handlers multiple times who would not expect multiple
+ends to occur, all listeners are removed from the `'end'` event whenever it
+is emitted.
 
 ## USAGE
 
