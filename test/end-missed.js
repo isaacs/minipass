@@ -19,3 +19,14 @@ t.test('listening for any endish event after end re-emits', t => {
   mp.on('data', d => str += d)
   mp.on('finish', () => t.equal(str, 'foo'))
 })
+
+t.test('all endish listeners get called', t => {
+  t.plan(3)
+  const mp = new MP()
+  let str = ''
+  mp.on('finish', () => t.equal(str, 'foo'))
+  mp.on('prefinish', () => t.equal(str, 'foo'))
+  mp.end('foo')
+  mp.on('data', d => str += d)
+  mp.on('end', () => t.equal(str, 'foo'))
+})

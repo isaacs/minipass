@@ -3,7 +3,6 @@ const EE = require('events')
 const Yallist = require('yallist')
 const EOF = Symbol('EOF')
 const MAYBE_EMIT_END = Symbol('maybeEmitEnd')
-const REMOVE_ALL_END_LISTENERS = Symbol('removeAllEndListeners')
 const EMITTED_END = Symbol('emittedEnd')
 const EMITTING_END = Symbol('emittingEnd')
 const CLOSED = Symbol('closed')
@@ -257,7 +256,7 @@ module.exports = class MiniPass extends EE {
         this[RESUME]()
       else if (isEndish(ev) && this[EMITTED_END]) {
         super.emit(ev)
-        this[REMOVE_ALL_END_LISTENERS]()
+        this.removeAllListeners(ev)
       }
     }
   }
@@ -277,7 +276,6 @@ module.exports = class MiniPass extends EE {
       this.emit('finish')
       if (this[CLOSED])
         this.emit('close')
-      this[REMOVE_ALL_END_LISTENERS]()
       this[EMITTING_END] = false
     }
   }
@@ -332,14 +330,8 @@ module.exports = class MiniPass extends EE {
       if (!isEndish(ev))
         this[MAYBE_EMIT_END]()
       else
-        this[REMOVE_ALL_END_LISTENERS]()
+        this.removeAllListeners(ev)
     }
-  }
-
-  [REMOVE_ALL_END_LISTENERS] () {
-    this.removeAllListeners('end')
-    this.removeAllListeners('prefinish')
-    this.removeAllListeners('finish')
   }
 
   // const all = await stream.collect()
