@@ -323,18 +323,23 @@ module.exports = class MiniPass extends EE {
 
   // const all = await stream.collect()
   collect () {
-    return new Promise((resolve, reject) => {
-      const buf = []
-      this.on('data', c => buf.push(c))
-      this.on('end', () => resolve(buf))
-      this.on('error', er => reject(er))
-    })
+    const buf = []
+    this.on('data', c => buf.push(c))
+    return this.promise().then(() => buf)
   }
 
   // const data = await stream.concat()
   concat () {
     return this.collect().then(chunks =>
       this[ENCODING] ? chunks.join('') : Buffer.concat(chunks))
+  }
+
+  // stream.promise().then(() => done, er => emitted error)
+  promise () {
+    return new Promise((resolve, reject) => {
+      this.on('end', () => resolve())
+      this.on('error', er => reject(er))
+    })
   }
 
   // for await (let chunk of stream)

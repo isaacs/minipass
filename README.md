@@ -43,6 +43,16 @@ mp.pipe(someOtherStream)
 mp.end('bar')
 ```
 
+### simple "are you done yet" promise
+
+```js
+mp.promise().then(() => {
+  // stream is finished
+}, er => {
+  // stream emitted an error
+})
+```
+
 ### collecting
 
 ```js
