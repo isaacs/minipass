@@ -16,6 +16,9 @@ const SD = require('string_decoder').StringDecoder
 const ENCODING = Symbol('encoding')
 const DECODER = Symbol('decoder')
 const FLOWING = Symbol('flowing')
+const PAUSED = Symbol('paused')
+const PAUSE_TRUE = Symbol('pauseTrue')
+const PAUSE_FALSE = Symbol('pauseFalse')
 const RESUME = Symbol('resume')
 const BUFFERLENGTH = Symbol('bufferLength')
 const BUFFERPUSH = Symbol('bufferPush')
@@ -43,6 +46,8 @@ module.exports = class MiniPass extends EE {
   constructor (options) {
     super()
     this[FLOWING] = false
+    // whether we're explicitly paused
+    this[PAUSED] = PAUSE_FALSE
     this.pipes = new Yallist()
     this.buffer = new Yallist()
     this[OBJECTMODE] = options && options.objectMode || false
@@ -176,12 +181,14 @@ module.exports = class MiniPass extends EE {
     // even if we're not reading.
     // we'll re-emit if a new 'end' listener is added anyway.
     // This makes MP more suitable to write-only use cases.
-    this[MAYBE_EMIT_END]()
+    if (this.flowing || this[PAUSED] !== PAUSE_TRUE)
+      this[MAYBE_EMIT_END]()
     return this
   }
 
   // don't let the internal resume be overwritten
   [RESUME] () {
+    this[PAUSED] = PAUSE_FALSE
     this[FLOWING] = true
     this.emit('resume')
     if (this.buffer.length)
@@ -198,6 +205,7 @@ module.exports = class MiniPass extends EE {
 
   pause () {
     this[FLOWING] = false
+    this[PAUSED] = PAUSE_TRUE
   }
 
   get flowing () {
