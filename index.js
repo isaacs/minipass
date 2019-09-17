@@ -234,13 +234,21 @@ module.exports = class MiniPass extends EE {
   }
 
   pipe (dest, opts) {
+    const ended = this[EMITTED_END]
+    opts = opts || {}
     if (dest === process.stdout || dest === process.stderr)
-      (opts = opts || {}).end = false
+      opts.end = false
+    else
+      opts.end = opts.end !== false
+
     const p = { dest: dest, opts: opts, ondrain: _ => this[RESUME]() }
     this.pipes.push(p)
 
     dest.on('drain', p.ondrain)
     this[RESUME]()
+    // piping an ended stream ends immediately
+    if (ended && p.opts.end)
+      p.dest.end()
     return dest
   }
 
@@ -305,7 +313,7 @@ module.exports = class MiniPass extends EE {
 
       this.pipes.forEach(p => {
         p.dest.removeListener('drain', p.ondrain)
-        if (!p.opts || p.opts.end !== false)
+        if (p.opts.end)
           p.dest.end()
       })
     } else if (ev === 'close') {

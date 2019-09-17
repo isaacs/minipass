@@ -1,0 +1,15 @@
+const t = require('tap')
+const MP = require('../')
+t.test('pipe from ended stream', t => {
+  const from = new MP()
+  from.end().on('end', () => {
+    t.equal(from.emittedEnd, true, 'from already emitted end')
+    from.pipe(new MP()).on('end', () => t.end())
+  })
+})
+
+t.test('pipe from ended stream with a promise', t => {
+  const from = new MP()
+  return from.end().promise().then(() =>
+    from.pipe(new MP()).promise())
+})
