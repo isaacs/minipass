@@ -8,9 +8,14 @@ const EMITTING_END = Symbol('emittingEnd')
 const CLOSED = Symbol('closed')
 const READ = Symbol('read')
 const FLUSH = Symbol('flush')
-const doIter = process.env._MP_NO_ITERATOR_SYMBOLS_  !== '1'
-const ASYNCITERATOR = doIter && Symbol.asyncIterator || Symbol('asyncIterator not implemented')
-const ITERATOR = doIter && Symbol.iterator || Symbol('iterator not implemented')
+
+// TODO remove when Node v8 support drops
+const doIter = global._MP_NO_ITERATOR_SYMBOLS_  !== '1'
+const ASYNCITERATOR = doIter && Symbol.asyncIterator
+  || Symbol('asyncIterator not implemented')
+const ITERATOR = doIter && Symbol.iterator
+  || Symbol('iterator not implemented')
+
 const FLUSHCHUNK = Symbol('flushChunk')
 const SD = require('string_decoder').StringDecoder
 const ENCODING = Symbol('encoding')
@@ -42,7 +47,7 @@ const isEndish = ev =>
   ev === 'finish' ||
   ev === 'prefinish'
 
-module.exports = class MiniPass extends EE {
+module.exports = class Minipass extends EE {
   constructor (options) {
     super()
     this[FLOWING] = false
@@ -423,7 +428,7 @@ module.exports = class MiniPass extends EE {
   }
 
   static isStream (s) {
-    return !!s && (s instanceof MiniPass || s instanceof EE && (
+    return !!s && (s instanceof Minipass || s instanceof EE && (
       typeof s.pipe === 'function' || // readable
       (typeof s.write === 'function' && typeof s.end === 'function') // writable
     ))

@@ -1,6 +1,6 @@
 'use strict'
 const t = require('tap')
-process.env._MP_NO_ITERATOR_SYMBOLS_ = '1'
+global._MP_NO_ITERATOR_SYMBOLS_ = '1'
 const MP = require('../index.js')
 const mp = new MP
 mp.write('foo')
