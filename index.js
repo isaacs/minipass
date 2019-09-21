@@ -421,4 +421,11 @@ module.exports = class MiniPass extends EE {
     }
     return { next }
   }
+
+  static isStream (s) {
+    return !!s && (s instanceof MiniPass || s instanceof EE && (
+      typeof s.pipe === 'function' || // readable
+      (typeof s.write === 'function' && typeof s.end === 'function') // writable
+    ))
+  }
 }
