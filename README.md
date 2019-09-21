@@ -30,7 +30,7 @@ the data, extend the class, and override the `write()` method.  Once
 you're done transforming the data however you want, call
 `super.write()` with the transform output.
 
-For some examples of streams that extend MiniPass in various ways, check
+For some examples of streams that extend Minipass in various ways, check
 out:
 
 - [minizlib](http://npm.im/minizlib)
@@ -94,12 +94,94 @@ is emitted.
 ## USAGE
 
 ```js
-const MiniPass = require('minipass')
-const mp = new MiniPass(options) // optional: { encoding }
+const Minipass = require('minipass')
+const mp = new Minipass(options) // optional: { encoding, objectMode }
 mp.write('foo')
 mp.pipe(someOtherStream)
 mp.end('bar')
 ```
+
+### OPTIONS
+
+* `encoding` How would you like the data coming _out_ of the stream to be
+  encoded?  Accepts any values that can be passed to `Buffer.toString()`.
+* `objectMode` Emit data exactly as it comes in.  This will be flipped on
+  by default if you write() something other than a string or Buffer at any
+  point.  Setting `objectMode: true` will prevent setting any encoding
+  value.
+
+### API
+
+Implements the user-facing portions of Node.js's `Readable` and `Writable`
+streams.
+
+### Methods
+
+* `write(chunk, [encoding], [callback])` - Put data in.  (Note that, in the
+  base Minipass class, the same data will come out.)  Returns `false` if
+  the stream will buffer the next write, or true if it's still in
+  "flowing" mode.
+* `end([chunk, [encoding]], [callback])` - Signal that you have no more
+  data to write.  This will queue an `end` event to be fired when all the
+  data has been consumed.
+* `setEncoding(encoding)` - Set the encoding for data coming of the
+  stream.  This can only be done once.
+* `pause()` - No more data for a while, please.  This also prevents `end`
+  from being emitted for empty streams until the stream is resumed.
+* `resume()` - Resume the stream.  If there's data in the buffer, it is
+  all discarded.  Any buffered events are immediately emitted.
+* `pipe(dest)` - Send all output to the stream provided.  There is no way
+  to unpipe.  When data is emitted, it is immediately written to any and
+  all pipe destinations.
+* `on(ev, fn)`, `emit(ev, fn)` - Minipass streams are EventEmitters.
+  Some events are given special treatment, however.  (See below under
+  "events".)
+* `promise()` - Returns a Promise that resolves when the stream emits
+  `end`, or rejects if the stream emits `error`.
+* `collect()` - Return a Promise that resolves on `end` with an array
+  containing each chunk of data that was emitted, or rejects if the
+  stream emits `error`.  Note that this consumes the stream data.
+* `concat()` - Same as `collect()`, but concatenates the data into a
+  single Buffer object.
+* `read(n)` - Consume `n` bytes of data out of the buffer.  If `n` is not
+  provided, then consume all of it.  If `n` bytes are not available, then
+  it returns null.  **Note** consuming streams in this way is less
+  efficient, and can lead to unnecessary Buffer copying.
+
+### Properties
+
+* `bufferLength` Read-only.  Total number of bytes buffered, or in the case
+  of objectMode, the total number of objects.
+* `encoding` The encoding that has been set.  (Setting this is equivalent
+  to calling `setEncoding(enc)` and has the same prohibition against
+  setting multiple times.)
+* `flowing` Read-only.  Boolean indicating whether a chunk written to the
+  stream will be immediately emitted.
+* `emittedEnd` Read-only.  Boolean indicating whether the end-ish events
+  (ie, `end`, `prefinish`, `finish`) have been emitted.  Note that
+  listening on any end-ish event will immediateyl re-emit it if it has
+  already been emitted.
+* `writable` Whether the stream is writable.  Default `true`.  Set to
+  `false` when `end()`
+* `readable` Whether the stream is readable.  Default `true`.
+* `buffer` A [yallist](http://npm.im/yallist) linked list of chunks written
+  to the stream that have not yet been emitted.  (It's probably a bad idea
+  to mess with this.)
+* `pipes` A [yallist](http://npm.im/yallist) linked list of streams that
+  this stream is piping into.  (It's probably a bad idea to mess with
+  this.)
+
+### Static Methods
+
+* `Minipass.isStream(stream)` Returns `true` if the argument is a stream,
+  and false otherwise.  To be considered a stream, the object must be
+  either an instance of Minipass, or an EventEmitter that has either a
+  `pipe()` method, or both `write()` and `end()` methods.  (Pretty much any
+  stream in node-land will return `true` for this.)
+
+## EXAMPLES
+
+Here are some examples of things you can do with Minipass streams.
 
 ### simple "are you done yet" promise
 
@@ -202,4 +284,124 @@ async function consume () {
 
 consume().then(res => console.log(res))
 // logs `foo\n` 5 times, and then `ok`
+```
+
+### subclass that `console.log()`s everything written into it
+
+```js
+class Logger extends Minipass {
+  write (chunk, encoding, callback) {
+    console.log('WRITE', chunk, encoding)
+    return super.write(chunk, encoding, callback)
+  }
+  end (chunk, encoding, callback) {
+    console.log('END', chunk, encoding)
+    return super.end(chunk, encoding, callback)
+  }
+}
+
+someSource.pipe(new Logger()).pipe(someDest)
+```
+
+### same thing, but using an inline anonymous class
+
+```js
+// js classes are fun
+someSource
+  .pipe(new (class extends Minipass {
+    emit (ev, ...data) {
+      // let's also log events, because debugging some weird thing
+      console.log('EMIT', ev)
+      return super.emit(ev, ...data)
+    }
+    write (chunk, encoding, callback) {
+      console.log('WRITE', chunk, encoding)
+      return super.write(chunk, encoding, callback)
+    }
+    end (chunk, encoding, callback) {
+      console.log('END', chunk, encoding)
+      return super.end(chunk, encoding, callback)
+    }
+  }))
+  .pipe(someDest)
+```
+
+### subclass that defers 'end' for some reason
+
+```js
+class SlowEnd extends Minipass {
+  emit (ev, ...args) {
+    if (ev === 'end') {
+      console.log('going to end, hold on a sec')
+      setTimeout(() => {
+        console.log('ok, ready to end now')
+        super.emit('end', ...args)
+      }, 100)
+    } else {
+      return super.emit(ev, ...args)
+    }
+  }
+}
+```
+
+### transform that creates newline-delimited JSON
+
+```js
+class NDJSONEncode extends Minipass {
+  write (obj, cb) {
+    try {
+      // JSON.stringify can throw, emit an error on that
+      return super.write(JSON.stringify(obj) + '\n', 'utf8', cb)
+    } catch (er) {
+      this.emit('error', er)
+    }
+  }
+  end (obj, cb) {
+    if (typeof obj === 'function') {
+      cb = obj
+      obj = undefined
+    }
+    if (obj !== undefined) {
+      this.write(obj)
+    }
+    return super.end(cb)
+  }
+}
+```
+
+### transform that parses newline-delimited JSON
+
+```js
+class NDJSONDecode extends Minipass {
+  constructor (options) {
+    // always be in object mode, as far as Minipass is concerned
+    super({ objectMode: true })
+    this._jsonBuffer = ''
+  }
+  write (chunk, encoding, cb) {
+    if (typeof chunk === 'string' &&
+        typeof encoding === 'string' &&
+        encoding !== 'utf8') {
+      chunk = Buffer.from(chunk, encoding).toString()
+    } else if (Buffer.isBuffer(chunk))
+      chunk = chunk.toString()
+    }
+    if (typeof encoding === 'function') {
+      cb = encoding
+    }
+    const jsonData = (this._jsonBuffer + chunk).split('\n')
+    this._jsonBuffer = jsonData.pop()
+    for (let i = 0; i < jsonData.length; i++) {
+      let parsed
+      try {
+        super.write(parsed)
+      } catch (er) {
+        this.emit('error', er)
+        continue
+      }
+    }
+    if (cb)
+      cb()
+  }
+}
 ```
