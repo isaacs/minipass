@@ -9,11 +9,11 @@
   },
   "devDependencies": {
     "end-of-stream": "^1.4.0",
-    "tap": "^14.6.1",
+    "tap": "^14.6.4",
     "through2": "^2.0.3"
   },
   "scripts": {
-    "test": "tap test/*.js --100",
+    "test": "tap",
     "preversion": "npm test",
     "postversion": "npm publish",
     "postpublish": "git push origin --follow-tags"
@@ -30,5 +30,8 @@
   "license": "ISC",
   "files": [
     "index.js"
-  ]
+  ],
+  "tap": {
+    "check-coverage": true
+  }
 }

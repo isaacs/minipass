@@ -150,9 +150,10 @@ streams.
 * `destroy([er])` - Destroy the stream.  If an error is provided, then an
   `'error'` event is emitted.  If the stream has a `close()` method, and
   has not emitted a `'close'` event yet, then `stream.close()` will be
-  called.  After being destroyed, writing to the stream will emit an error.
-  No more data will be emitted if the stream is destroyed, even if it was
-  previously buffered.
+  called.  Any Promises returned by `.promise()`, `.collect()` or
+  `.concat()` will be rejected.  After being destroyed, writing to the
+  stream will emit an error.  No more data will be emitted if the stream is
+  destroyed, even if it was previously buffered.
 
 ### Properties
 
@@ -177,6 +178,8 @@ streams.
   this stream is piping into.  (It's probably a bad idea to mess with
   this.)
 * `destroyed` A getter that indicates whether the stream was destroyed.
+* `paused` True if the stream has been explicitly paused, otherwise false.
+* `objectMode` Getter that indicates whether the stream is in `objectMode`.
 
 ### Events
 

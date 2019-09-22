@@ -1,6 +1,8 @@
 'use strict'
 const EE = require('events')
 const Yallist = require('yallist')
+const SD = require('string_decoder').StringDecoder
+
 const EOF = Symbol('EOF')
 const MAYBE_EMIT_END = Symbol('maybeEmitEnd')
 const EMITTED_END = Symbol('emittedEnd')
@@ -8,6 +10,17 @@ const EMITTING_END = Symbol('emittingEnd')
 const CLOSED = Symbol('closed')
 const READ = Symbol('read')
 const FLUSH = Symbol('flush')
+const FLUSHCHUNK = Symbol('flushChunk')
+const ENCODING = Symbol('encoding')
+const DECODER = Symbol('decoder')
+const FLOWING = Symbol('flowing')
+const PAUSED = Symbol('paused')
+const RESUME = Symbol('resume')
+const BUFFERLENGTH = Symbol('bufferLength')
+const BUFFERPUSH = Symbol('bufferPush')
+const BUFFERSHIFT = Symbol('bufferShift')
+const OBJECTMODE = Symbol('objectMode')
+const DESTROYED = Symbol('destroyed')
 
 // TODO remove when Node v8 support drops
 const doIter = global._MP_NO_ITERATOR_SYMBOLS_  !== '1'
@@ -16,30 +29,11 @@ const ASYNCITERATOR = doIter && Symbol.asyncIterator
 const ITERATOR = doIter && Symbol.iterator
   || Symbol('iterator not implemented')
 
-const FLUSHCHUNK = Symbol('flushChunk')
-const SD = require('string_decoder').StringDecoder
-const ENCODING = Symbol('encoding')
-const DECODER = Symbol('decoder')
-const FLOWING = Symbol('flowing')
-const PAUSED = Symbol('paused')
-const PAUSE_TRUE = Symbol('pauseTrue')
-const PAUSE_FALSE = Symbol('pauseFalse')
-const RESUME = Symbol('resume')
-const BUFFERLENGTH = Symbol('bufferLength')
-const BUFFERPUSH = Symbol('bufferPush')
-const BUFFERSHIFT = Symbol('bufferShift')
-const OBJECTMODE = Symbol('objectMode')
-const DESTROYED = Symbol('destroyed')
-
-
 // Buffer in node 4.x < 4.5.0 doesn't have working Buffer.from
 // or Buffer.alloc, and Buffer in node 10 deprecated the ctor.
 // .M, this is fine .\^/M..
-let B = Buffer
-/* istanbul ignore next */
-if (!B.alloc) {
-  B = require('safe-buffer').Buffer
-}
+const B = Buffer.alloc ? Buffer
+  : /* istanbul ignore next */ require('safe-buffer').Buffer
 
 // events that mean 'the stream is over'
 // these are treated specially, and re-emitted
@@ -54,7 +48,7 @@ module.exports = class Minipass extends EE {
     super()
     this[FLOWING] = false
     // whether we're explicitly paused
-    this[PAUSED] = PAUSE_FALSE
+    this[PAUSED] = false
     this.pipes = new Yallist()
     this.buffer = new Yallist()
     this[OBJECTMODE] = options && options.objectMode || false
@@ -97,6 +91,8 @@ module.exports = class Minipass extends EE {
   setEncoding (enc) {
     this.encoding = enc
   }
+
+  get objectMode () { return this[OBJECTMODE] }
 
   write (chunk, encoding, cb) {
     if (this[EOF])
@@ -200,7 +196,7 @@ module.exports = class Minipass extends EE {
     // even if we're not reading.
     // we'll re-emit if a new 'end' listener is added anyway.
     // This makes MP more suitable to write-only use cases.
-    if (this.flowing || this[PAUSED] !== PAUSE_TRUE)
+    if (this.flowing || !this[PAUSED])
       this[MAYBE_EMIT_END]()
     return this
   }
@@ -210,7 +206,7 @@ module.exports = class Minipass extends EE {
     if (this[DESTROYED])
       return
 
-    this[PAUSED] = PAUSE_FALSE
+    this[PAUSED] = false
     this[FLOWING] = true
     this.emit('resume')
     if (this.buffer.length)
@@ -227,7 +223,7 @@ module.exports = class Minipass extends EE {
 
   pause () {
     this[FLOWING] = false
-    this[PAUSED] = PAUSE_TRUE
+    this[PAUSED] = true
   }
 
   get destroyed () {
@@ -236,6 +232,10 @@ module.exports = class Minipass extends EE {
 
   get flowing () {
     return this[FLOWING]
+  }
+
+  get paused () {
+    return this[PAUSED]
   }
 
   [BUFFERPUSH] (chunk) {
@@ -310,6 +310,10 @@ module.exports = class Minipass extends EE {
     return this[EMITTED_END]
   }
 
+  get ended () {
+    return this[EMITTED_END]
+  }
+
   [MAYBE_EMIT_END] () {
     if (!this[EMITTING_END] &&
         !this[EMITTED_END] &&
@@ -365,6 +369,7 @@ module.exports = class Minipass extends EE {
         return
     }
 
+    // TODO: replace with a spread operator when Node v4 support drops
     const args = new Array(arguments.length)
     args[0] = ev
     args[1] = data
@@ -398,7 +403,7 @@ module.exports = class Minipass extends EE {
   // const data = await stream.concat()
   concat () {
     return this.collect().then(buf =>
-      this[ENCODING] ? buf.join('') : Buffer.concat(buf, buf.dataLength))
+      this[ENCODING] ? buf.join('') : B.concat(buf, buf.dataLength))
   }
 
   // stream.promise().then(() => done, er => emitted error)

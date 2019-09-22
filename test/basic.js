@@ -110,6 +110,7 @@ t.test('read method', async t => {
   const mp = new MiniPass({ encoding: 'utf8' })
   mp.on('data', c => t.equal(c, butterfly))
   mp.pause()
+  t.equal(mp.paused, true, 'paused=true')
   mp.write(B.from(butterfly))
   t.equal(mp.read(5), null)
   t.equal(mp.read(0), null)
@@ -185,6 +186,7 @@ t.test('write after end', async t => {
   t.throws(_ => mp.write('nope'))
   t.notOk(sawEnd, 'should not get end event yet (not flowing)')
   mp.resume()
+  t.equal(mp.paused, false, 'paused=false after resume')
   t.ok(sawEnd, 'should get end event after resume()')
 })
 
@@ -194,6 +196,7 @@ t.test('write after end', async t => {
   mp.on('end', _ => sawEnd++)
   mp.end() // empty
   t.ok(mp.emittedEnd, 'emitted end event')
+  t.ok(mp.ended, 'emitted end event')
   t.throws(_ => mp.write('nope'))
   t.equal(sawEnd, 1, 'should get end event (empty stream)')
   mp.resume()
@@ -377,6 +380,9 @@ t.test('emit resume event on resume', t => {
 
 t.test('objectMode', t => {
   const mp = new MiniPass({ objectMode: true })
+  t.equal(mp.objectMode, true, 'objectMode getter returns value')
+  mp.objectMode = false
+  t.equal(mp.objectMode, true, 'objectMode getter is read-only')
   const a = { a: 1 }
   const b = { b: 1 }
   const out = []
