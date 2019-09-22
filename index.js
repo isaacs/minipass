@@ -360,14 +360,18 @@ module.exports = class Minipass extends EE {
   // const all = await stream.collect()
   collect () {
     const buf = []
-    this.on('data', c => buf.push(c))
+    buf.dataLength = 0
+    this.on('data', c => {
+      buf.push(c)
+      buf.dataLength += c.length
+    })
     return this.promise().then(() => buf)
   }
 
   // const data = await stream.concat()
   concat () {
-    return this.collect().then(chunks =>
-      this[ENCODING] ? chunks.join('') : Buffer.concat(chunks))
+    return this.collect().then(buf =>
+      this[ENCODING] ? buf.join('') : Buffer.concat(buf, buf.dataLength))
   }
 
   // stream.promise().then(() => done, er => emitted error)
