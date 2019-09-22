@@ -171,6 +171,32 @@ streams.
   this stream is piping into.  (It's probably a bad idea to mess with
   this.)
 
+### Events
+
+* `data` Emitted when there's data to read.  Argument is the data to read.
+  This is never emitted while not flowing.  If a listener is attached, that
+  will resume the stream.
+* `end` Emitted when there's no more data to read.  This will be emitted
+  immediately for empty streams when `end()` is called.  If a listener is
+  attached, and `end` was already emitted, then it will be emitted again.
+  All listeners are removed when `end` is emitted.
+* `prefinish` An end-ish event that follows the same logic as `end` and is
+  emitted in the same conditions where `end` is emitted.  Emitted after
+  `'end'`.
+* `finish` An end-ish event that follows the same logic as `end` and is
+  emitted in the same conditions where `end` is emitted.  Emitted after
+  `'prefinish'`.
+* `close` An indication that an underlying resource has been released.
+  Minipass does not emit this event, but will defer it until after `end`
+  has been emitted, since it throws off some stream libraries otherwise.
+* `drain` Emitted when the internal buffer empties, and it is again
+  suitable to `write()` into the stream.
+* `readable` Emitted when data is buffered and ready to be read by a
+  consumer.
+* `resume` Emitted when stream changes state from buffering to flowing
+  mode.  (Ie, when `resume` is called, `pipe` is called, or a `data` event
+  listener is added.)
+
 ### Static Methods
 
 * `Minipass.isStream(stream)` Returns `true` if the argument is a stream,
