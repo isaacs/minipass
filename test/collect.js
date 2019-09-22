@@ -41,3 +41,12 @@ t.test('concat buffers', async t => {
   mp.end()
   await t.resolveMatch(mp.concat(), Buffer.from('foobarbaz'))
 })
+
+t.test('concat objectMode fails', async t => {
+  const a = new MP({objectMode: true})
+  await t.rejects(a.concat(), new Error('cannot concat in objectMode'))
+  const b = new MP()
+  b.write('asdf')
+  setTimeout(() => b.end({foo:1}))
+  await t.rejects(b.concat(), new Error('cannot concat in objectMode'))
+})

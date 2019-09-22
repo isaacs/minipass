@@ -93,6 +93,7 @@ module.exports = class Minipass extends EE {
   }
 
   get objectMode () { return this[OBJECTMODE] }
+  set objectMode (ॐ ) { this[OBJECTMODE] = this[OBJECTMODE] || !!ॐ  }
 
   write (chunk, encoding, cb) {
     if (this[EOF])
@@ -111,6 +112,9 @@ module.exports = class Minipass extends EE {
 
     if (!encoding)
       encoding = 'utf8'
+
+    if (typeof chunk !== 'string' && !B.isBuffer(chunk) && !this[OBJECTMODE])
+      this.objectMode = true
 
     // fast-path writing strings of same encoding to a stream with
     // an empty buffer, skipping the buffer/decoder dance
@@ -402,8 +406,12 @@ module.exports = class Minipass extends EE {
 
   // const data = await stream.concat()
   concat () {
-    return this.collect().then(buf =>
-      this[ENCODING] ? buf.join('') : B.concat(buf, buf.dataLength))
+    return this[OBJECTMODE]
+      ? Promise.reject(new Error('cannot concat in objectMode'))
+      : this.collect().then(buf =>
+          this[OBJECTMODE]
+            ? Promise.reject(new Error('cannot concat in objectMode'))
+            : this[ENCODING] ? buf.join('') : B.concat(buf, buf.dataLength))
   }
 
   // stream.promise().then(() => done, er => emitted error)

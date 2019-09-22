@@ -24,6 +24,10 @@ If you set `objectMode: true` in the options, then whatever is written
 will be emitted.  Otherwise, it'll do a minimal amount of Buffer
 copying to ensure proper Streams semantics when `read(n)` is called.
 
+`objectMode` can also be set by doing `stream.objectMode = true`, or by
+writing any non-string/non-buffer data.  `objectMode` cannot be set to
+false once it is set.
+
 This is not a `through` or `through2` stream.  It doesn't transform
 the data, it just passes it right through.  If you want to transform
 the data, extend the class, and override the `write()` method.  Once
@@ -142,7 +146,8 @@ streams.
   containing each chunk of data that was emitted, or rejects if the
   stream emits `error`.  Note that this consumes the stream data.
 * `concat()` - Same as `collect()`, but concatenates the data into a
-  single Buffer object.
+  single Buffer object.  Will reject the returned promise if the stream is
+  in objectMode, or if it goes into objectMode by the end of the data.
 * `read(n)` - Consume `n` bytes of data out of the buffer.  If `n` is not
   provided, then consume all of it.  If `n` bytes are not available, then
   it returns null.  **Note** consuming streams in this way is less
@@ -179,7 +184,8 @@ streams.
   this.)
 * `destroyed` A getter that indicates whether the stream was destroyed.
 * `paused` True if the stream has been explicitly paused, otherwise false.
-* `objectMode` Getter that indicates whether the stream is in `objectMode`.
+* `objectMode` Indicates whether the stream is in `objectMode`.  Once set
+  to `true`, it cannot be set to `false`.
 
 ### Events
 
