@@ -11,7 +11,6 @@ if (!B.alloc) {
   B = require('safe-buffer').Buffer
 }
 
-
 t.test('some basic piping and writing', async t => {
   let mp = new MiniPass({ encoding: 'base64' })
   t.notOk(mp.flowing)

@@ -2,7 +2,6 @@
 const t = require('tap')
 const MP = require('../index.js')
 
-
 t.test('sync iteration', t => {
   const cases = {
     'buffer': [ null, [
@@ -41,6 +40,21 @@ t.test('sync iteration', t => {
   for (let c in cases) {
     runTest(c, cases[c][0], cases[c][1])
   }
+
+  t.test('destroy while iterating', t => {
+    const mp = new MP({ objectMode: true })
+    mp.write('a')
+    mp.write('b')
+    mp.write('c')
+    mp.write('d')
+    const result = []
+    for (let letter of mp) {
+      result.push(letter)
+      mp.destroy()
+    }
+    t.same(result, ['a'])
+    t.end()
+  })
 
   t.end()
 })
@@ -286,6 +300,20 @@ t.test('async iteration', t => {
     }
 
     await t.rejects(run, poop)
+  })
+
+  t.test('destroy', async t => {
+    const mp = new MP()
+    const poop = new Error('poop')
+    setTimeout(() => mp.destroy())
+    const result = []
+    const run = async () => {
+      for await (let x of mp) {
+        result.push(x)
+      }
+    }
+
+    await t.rejects(run, { message: 'stream destroyed' })
   })
 
   t.end()

@@ -29,6 +29,8 @@ const BUFFERLENGTH = Symbol('bufferLength')
 const BUFFERPUSH = Symbol('bufferPush')
 const BUFFERSHIFT = Symbol('bufferShift')
 const OBJECTMODE = Symbol('objectMode')
+const DESTROYED = Symbol('destroyed')
+
 
 // Buffer in node 4.x < 4.5.0 doesn't have working Buffer.from
 // or Buffer.alloc, and Buffer in node 10 deprecated the ctor.
@@ -100,6 +102,14 @@ module.exports = class Minipass extends EE {
     if (this[EOF])
       throw new Error('write after end')
 
+    if (this[DESTROYED]) {
+      this.emit('error', Object.assign(
+        new Error('Cannot call write after a stream was destroyed'),
+        { code: 'ERR_STREAM_DESTROYED' }
+      ))
+      return true
+    }
+
     if (typeof encoding === 'function')
       cb = encoding, encoding = 'utf8'
 
@@ -130,6 +140,9 @@ module.exports = class Minipass extends EE {
   }
 
   read (n) {
+    if (this[DESTROYED])
+      return null
+
     try {
       if (this[BUFFERLENGTH] === 0 || n === 0 || n > this[BUFFERLENGTH])
         return null
@@ -194,6 +207,9 @@ module.exports = class Minipass extends EE {
 
   // don't let the internal resume be overwritten
   [RESUME] () {
+    if (this[DESTROYED])
+      return
+
     this[PAUSED] = PAUSE_FALSE
     this[FLOWING] = true
     this.emit('resume')
@@ -212,6 +228,10 @@ module.exports = class Minipass extends EE {
   pause () {
     this[FLOWING] = false
     this[PAUSED] = PAUSE_TRUE
+  }
+
+  get destroyed () {
+    return this[DESTROYED]
   }
 
   get flowing () {
@@ -248,6 +268,9 @@ module.exports = class Minipass extends EE {
   }
 
   pipe (dest, opts) {
+    if (this[DESTROYED])
+      return
+
     const ended = this[EMITTED_END]
     opts = opts || {}
     if (dest === process.stdout || dest === process.stderr)
@@ -290,6 +313,7 @@ module.exports = class Minipass extends EE {
   [MAYBE_EMIT_END] () {
     if (!this[EMITTING_END] &&
         !this[EMITTED_END] &&
+        !this[DESTROYED] &&
         this.buffer.length === 0 &&
         this[EOF]) {
       this[EMITTING_END] = true
@@ -303,7 +327,10 @@ module.exports = class Minipass extends EE {
   }
 
   emit (ev, data) {
-    if (ev === 'data') {
+    // error and close are only events allowed after calling destroy()
+    if (ev !== 'error' && ev !== 'close' && ev !== DESTROYED && this[DESTROYED])
+      return
+    else if (ev === 'data') {
       if (!data)
         return
 
@@ -334,7 +361,7 @@ module.exports = class Minipass extends EE {
     } else if (ev === 'close') {
       this[CLOSED] = true
       // don't emit close before 'end' and 'finish'
-      if (!this[EMITTED_END])
+      if (!this[EMITTED_END] && !this[DESTROYED])
         return
     }
 
@@ -377,6 +404,7 @@ module.exports = class Minipass extends EE {
   // stream.promise().then(() => done, er => emitted error)
   promise () {
     return new Promise((resolve, reject) => {
+      this.on(DESTROYED, () => reject(new Error('stream destroyed')))
       this.on('end', () => resolve())
       this.on('error', er => reject(er))
     })
@@ -410,9 +438,11 @@ module.exports = class Minipass extends EE {
         this.removeListener('data', ondata)
         resolve({ done: true })
       }
+      const ondestroy = () => onerr(new Error('stream destroyed'))
       return new Promise((res, rej) => {
         reject = rej
         resolve = res
+        this.once(DESTROYED, ondestroy)
         this.once('error', onerr)
         this.once('end', onend)
         this.once('data', ondata)
@@ -430,6 +460,32 @@ module.exports = class Minipass extends EE {
       return { value, done }
     }
     return { next }
+  }
+
+  destroy (er) {
+    if (this[DESTROYED]) {
+      if (er)
+        this.emit('error', er)
+      else
+        this.emit(DESTROYED)
+      return this
+    }
+
+    this[DESTROYED] = true
+
+    // throw away all buffered data, it's never coming out
+    this.buffer = new Yallist()
+    this[BUFFERLENGTH] = 0
+
+    if (typeof this.close === 'function' && !this[CLOSED])
+      this.close()
+
+    if (er)
+      this.emit('error', er)
+    else // if no error to emit, still reject pending promises
+      this.emit(DESTROYED)
+
+    return this
   }
 
   static isStream (s) {

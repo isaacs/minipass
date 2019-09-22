@@ -147,6 +147,12 @@ streams.
   provided, then consume all of it.  If `n` bytes are not available, then
   it returns null.  **Note** consuming streams in this way is less
   efficient, and can lead to unnecessary Buffer copying.
+* `destroy([er])` - Destroy the stream.  If an error is provided, then an
+  `'error'` event is emitted.  If the stream has a `close()` method, and
+  has not emitted a `'close'` event yet, then `stream.close()` will be
+  called.  After being destroyed, writing to the stream will emit an error.
+  No more data will be emitted if the stream is destroyed, even if it was
+  previously buffered.
 
 ### Properties
 
@@ -170,6 +176,7 @@ streams.
 * `pipes` A [yallist](http://npm.im/yallist) linked list of streams that
   this stream is piping into.  (It's probably a bad idea to mess with
   this.)
+* `destroyed` A getter that indicates whether the stream was destroyed.
 
 ### Events
 
