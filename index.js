@@ -122,7 +122,8 @@ module.exports = class Minipass extends EE {
         ? (this.emit('data', chunk), this.flowing)
         : (this[BUFFERPUSH](chunk), false)
     } finally {
-      this.emit('readable')
+      if (this[BUFFERLENGTH] !== 0)
+        this.emit('readable')
       if (cb)
         cb()
     }
