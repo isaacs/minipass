@@ -66,6 +66,7 @@ module.exports = class Minipass extends EE {
     this.writable = true
     this.readable = true
     this[BUFFERLENGTH] = 0
+    this[DESTROYED] = false
   }
 
   get bufferLength () { return this[BUFFERLENGTH] }
