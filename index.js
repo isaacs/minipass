@@ -15,6 +15,10 @@ const ENCODING = Symbol('encoding')
 const DECODER = Symbol('decoder')
 const FLOWING = Symbol('flowing')
 const PAUSED = Symbol('paused')
+// enum for paused states.
+const PAUSE_FALSE = Symbol('pausedFalse')
+const PAUSE_IMPLICIT = Symbol('pausedImplicit')
+const PAUSE_EXPLICIT = Symbol('pausedExplicit')
 const RESUME = Symbol('resume')
 const BUFFERLENGTH = Symbol('bufferLength')
 const BUFFERPUSH = Symbol('bufferPush')
@@ -43,12 +47,12 @@ const isEndish = ev =>
   ev === 'finish' ||
   ev === 'prefinish'
 
-module.exports = class Minipass extends EE {
+class Minipass extends EE {
   constructor (options) {
     super()
     this[FLOWING] = false
     // whether we're explicitly paused
-    this[PAUSED] = false
+    this[PAUSED] = PAUSE_FALSE
     this.pipes = new Yallist()
     this.buffer = new Yallist()
     this[OBJECTMODE] = options && options.objectMode || false
@@ -201,7 +205,7 @@ module.exports = class Minipass extends EE {
     // even if we're not reading.
     // we'll re-emit if a new 'end' listener is added anyway.
     // This makes MP more suitable to write-only use cases.
-    if (this.flowing || !this[PAUSED])
+    if (this.flowing || this[PAUSED] !== PAUSE_EXPLICIT)
       this[MAYBE_EMIT_END]()
     return this
   }
@@ -211,7 +215,7 @@ module.exports = class Minipass extends EE {
     if (this[DESTROYED])
       return
 
-    this[PAUSED] = false
+    this[PAUSED] = PAUSE_FALSE
     this[FLOWING] = true
     this.emit('resume')
     if (this.buffer.length)
@@ -226,9 +230,14 @@ module.exports = class Minipass extends EE {
     return this[RESUME]()
   }
 
+  [PAUSE_IMPLICIT] () {
+    this[FLOWING] = false
+    this[PAUSED] = PAUSE_IMPLICIT
+  }
+
   pause () {
     this[FLOWING] = false
-    this[PAUSED] = true
+    this[PAUSED] = PAUSE_EXPLICIT
   }
 
   get destroyed () {
@@ -240,7 +249,7 @@ module.exports = class Minipass extends EE {
   }
 
   get paused () {
-    return this[PAUSED]
+    return this[PAUSED] !== PAUSE_FALSE
   }
 
   [BUFFERPUSH] (chunk) {
@@ -283,11 +292,21 @@ module.exports = class Minipass extends EE {
     else
       opts.end = opts.end !== false
 
-    const p = { dest: dest, opts: opts, ondrain: _ => this[RESUME]() }
+    // ondrain only resumes in the PAUSE_IMPLICIT case, not PAUSE_EXPLICIT
+    // don't bother calling resume if we're already flowing.
+    const p = {
+      dest: dest,
+      opts: opts,
+      ondrain: _ => this[PAUSED] === PAUSE_IMPLICIT && this[RESUME]()
+    }
     this.pipes.push(p)
 
     dest.on('drain', p.ondrain)
-    this[RESUME]()
+
+    // don't start flowing if we're explicitly paused
+    if (this[PAUSED] !== PAUSE_EXPLICIT)
+      this[RESUME]()
+
     // piping an ended stream ends immediately
     if (ended && p.opts.end)
       p.dest.end()
@@ -302,7 +321,8 @@ module.exports = class Minipass extends EE {
     try {
       return super.on(ev, fn)
     } finally {
-      if (ev === 'data' && !this.pipes.length && !this.flowing)
+      if (ev === 'data' && !this.pipes.length && !this.flowing &&
+          this[PAUSED] !== PAUSE_EXPLICIT)
         this[RESUME]()
       else if (isEndish(ev) && this[EMITTED_END]) {
         super.emit(ev)
@@ -345,7 +365,7 @@ module.exports = class Minipass extends EE {
 
       if (this.pipes.length)
         this.pipes.forEach(p =>
-          p.dest.write(data) === false && this.pause())
+          p.dest.write(data) === false && this[PAUSE_IMPLICIT]())
     } else if (ev === 'end') {
       // only actual end gets this treatment
       if (this[EMITTED_END] === true)
@@ -444,7 +464,7 @@ module.exports = class Minipass extends EE {
       const ondata = value => {
         this.removeListener('error', onerr)
         this.removeListener('end', onend)
-        this.pause()
+        this[PAUSE_IMPLICIT]()
         resolve({ value: value, done: !!this[EOF] })
       }
       const onend = () => {
@@ -509,3 +529,5 @@ module.exports = class Minipass extends EE {
     ))
   }
 }
+
+module.exports = Minipass
