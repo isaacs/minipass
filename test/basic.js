@@ -196,7 +196,6 @@ t.test('write after end', async t => {
   mp.on('end', _ => sawEnd++)
   mp.end() // empty
   t.ok(mp.emittedEnd, 'emitted end event')
-  t.ok(mp.ended, 'emitted end event')
   t.throws(_ => mp.write('nope'))
   t.equal(sawEnd, 1, 'should get end event (empty stream)')
   mp.resume()

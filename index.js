@@ -335,10 +335,6 @@ class Minipass extends EE {
     return this[EMITTED_END]
   }
 
-  get ended () {
-    return this[EMITTED_END]
-  }
-
   [MAYBE_EMIT_END] () {
     if (!this[EMITTING_END] &&
         !this[EMITTED_END] &&
