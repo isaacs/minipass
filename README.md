@@ -52,6 +52,9 @@ out:
 There are several things that make Minipass streams different from (and in
 some ways superior to) Node.js core streams.
 
+Please read these caveats if you are familiar with noode-core streams and
+intend to use Minipass streams in your programs.
+
 ### Timing
 
 Minipass streams are designed to support synchronous use-cases.  Thus, data
@@ -86,16 +89,170 @@ If the data has nowhere to go, then `write()` returns false, and the data
 sits in a buffer, to be drained out immediately as soon as anyone consumes
 it.
 
+### Hazards of Buffering (or: Why Minipass Is So Fast)
+
+Since data written to a Minipass stream is immediately written all the way
+through the pipeline, and `write()` always returns true/false based on
+whether the data was fully flushed, backpressure is communicated
+immediately to the upstream caller.  This minimizes buffering.
+
+Consider this case:
+
+```js
+const {PassThrough} = require('stream')
+const p1 = new PassThrough({ highWaterMark: 1024 })
+const p2 = new PassThrough({ highWaterMark: 1024 })
+const p3 = new PassThrough({ highWaterMark: 1024 })
+const p4 = new PassThrough({ highWaterMark: 1024 })
+
+p1.pipe(p2).pipe(p3).pipe(p4)
+p4.on('data', () => console.log('made it through'))
+
+// this returns false and buffers, then writes to p2 on next tick (1)
+// p2 returns false and buffers, pausing p1, then writes to p3 on next tick (2)
+// p3 returns false and buffers, pausing p2, then writes to p4 on next tick (3)
+// p4 returns false and buffers, pausing p3, then emits 'data' and 'drain'
+// on next tick (4)
+// p3 sees p4's 'drain' event, and calls resume(), emitting 'resume' and
+// 'drain' on next tick (5)
+// p2 sees p3's 'drain', calls resume(), emits 'resume' and 'drain' on next tick (6)
+// p1 sees p2's 'drain', calls resume(), emits 'resume' and 'drain' on next
+// tick (7)
+
+p1.write(Buffer.alloc(2048)) // returns false
+```
+
+Along the way, the data was buffered and deferred at each stage, and
+multiple event deferrals happened, for an unblocked pipeline where it was
+perfectly safe to write all the way through!
+
+Furthermore, setting a `highWaterMark` of `1024` might lead someone reading
+the code to think an advisory maximum of 1KiB is being set for the
+pipeline.  However, the actual advisory buffering level is the _sum_ of
+`highWaterMark` values, since each one has its own bucket.
+
+Consider the Minipass case:
+
+```js
+const m1 = new Minipass()
+const m2 = new Minipass()
+const m3 = new Minipass()
+const m4 = new Minipass()
+
+m1.pipe(m2).pipe(m3).pipe(m4)
+m4.on('data', () => console.log('made it through'))
+
+// m1 is flowing, so it writes the data to m2 immediately
+// m2 is flowing, so it writes the data to m3 immediately
+// m3 is flowing, so it writes the data to m4 immediately
+// m4 is flowing, so it fires the 'data' event immediately, returns true
+// m4's write returned true, so m3 is still flowing, returns true
+// m3's write returned true, so m2 is still flowing, returns true
+// m2's write returned true, so m1 is still flowing, returns true
+// No event deferrals or buffering along the way!
+
+m1.write(Buffer.alloc(2048)) // returns true
+```
+
+It is extremely unlikely that you _don't_ want to buffer any data written,
+or _ever_ buffer data that can be flushed all the way through.  Neither
+node-core streams nor Minipass ever fail to buffer written data, but
+node-core streams do a lot of unnecessary buffering and pausing.
+
+As always, the faster implementation is the one that does less stuff and
+waits less time to do it.
+
+### Immediately emit `end` for empty streams (when not paused)
+
+If a stream is not paused, and `end()` is called before writing any data
+into it, then it will emit `end` immediately.
+
+If you have logic that occurs on the `end` event which you don't want to
+potentially happen immediately (for example, closing file descriptors,
+moving on to the next entry in an archive parse stream, etc.) then be sure
+to call `stream.pause()` on creation, and then `stream.resume()` once you
+are ready to respond to the `end` event.
+
 ### Emit `end` When Asked
 
-If you do `stream.on('end', someFunction)`, and the stream has already
-emitted `end`, then it will emit it again.
+One hazard of immediately emitting `'end'` is that you may not yet have had
+a chance to add a listener.  In order to avoid this hazard, Minipass
+streams safely re-emit the `'end'` event if a new listener is added after
+`'end'` has been emitted.
+
+Ie, if you do `stream.on('end', someFunction)`, and the stream has already
+emitted `end`, then it will call the handler right away.  (You can think of
+this somewhat like attaching a new `.then(fn)` to a previously-resolved
+Promise.)
 
 To prevent calling handlers multiple times who would not expect multiple
 ends to occur, all listeners are removed from the `'end'` event whenever it
 is emitted.
 
+### Impact of "immediate flow" on Tee-streams
+
+A "tee stream" is a stream piping to multiple destinations:
+
+```js
+const tee = new Minipass()
+t.pipe(dest1)
+t.pipe(dest2)
+t.write('foo') // goes to both destinations
+```
+
+Since Minipass streams _immediately_ process any pending data through the
+pipeline when a new pipe destination is added, this can have surprising
+effects, especially when a stream comes in from some other function and may
+or may not have data in its buffer.
+
+```js
+// WARNING! WILL LOSE DATA!
+const src = new Minipass()
+src.write('foo')
+src.pipe(dest1) // 'foo' chunk flows to dest1 immediately, and is gone
+src.pipe(dest2) // gets nothing!
+```
+
+The solution is to create a dedicated tee-stream junction that pipes to
+both locations, and then pipe to _that_ instead.
+
+```js
+// Safe example: tee to both places
+const src = new Minipass()
+src.write('foo')
+const tee = new Minipass()
+tee.pipe(dest1)
+tee.pipe(dest2)
+stream.pipe(tee) // tee gets 'foo', pipes to both locations
+```
+
+The same caveat applies to `on('data')` event listeners.  The first one
+added will _immediately_ receive all of the data, leaving nothing for the
+second:
+
+```js
+// WARNING! WILL LOSE DATA!
+const src = new Minipass()
+src.write('foo')
+src.on('data', handler1) // receives 'foo' right away
+src.on('data', handler2) // nothing to see here!
+```
+
+Using a dedicated tee-stream can be used in this case as well:
+
+```js
+// Safe example: tee to both data handlers
+const src = new Minipass()
+src.write('foo')
+const tee = new Minipass()
+tee.on('data', handler1)
+tee.on('data', handler2)
+src.pipe(tee)
+```
+
 ## USAGE
+
+It's a stream!  Use it like a stream and it'll most likely do what you want.
 
 ```js
 const Minipass = require('minipass')
