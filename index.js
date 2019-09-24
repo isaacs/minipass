@@ -121,6 +121,17 @@ class Minipass extends EE {
     if (typeof chunk !== 'string' && !B.isBuffer(chunk) && !this[OBJECTMODE])
       this.objectMode = true
 
+    // this ensures at this point that the chunk is a buffer or string
+    // don't buffer it up or send it to the decoder
+    if (!this.objectMode && !chunk.length) {
+      const ret = this.flowing
+      if (this[BUFFERLENGTH] !== 0)
+        this.emit('readable')
+      if (cb)
+        cb()
+      return ret
+    }
+
     // fast-path writing strings of same encoding to a stream with
     // an empty buffer, skipping the buffer/decoder dance
     if (typeof chunk === 'string' && !this[OBJECTMODE] &&
