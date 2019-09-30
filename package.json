@@ -4,8 +4,7 @@
   "description": "minimal implementation of a PassThrough stream",
   "main": "index.js",
   "dependencies": {
-    "safe-buffer": "^5.1.2",
-    "yallist": "^3.0.0"
+    "yallist": "^4.0.0"
   },
   "devDependencies": {
     "end-of-stream": "^1.4.0",
@@ -33,5 +32,8 @@
   ],
   "tap": {
     "check-coverage": true
+  },
+  "engines": {
+    "node": ">=8"
   }
 }
