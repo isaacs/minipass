@@ -417,10 +417,12 @@ module.exports = class Minipass extends EE {
   // const all = await stream.collect()
   collect () {
     const buf = []
-    buf.dataLength = 0
+    if (!this[OBJECTMODE])
+      buf.dataLength = 0
     this.on('data', c => {
       buf.push(c)
-      buf.dataLength += c.length
+      if (!this[OBJECTMODE])
+        buf.dataLength += c.length
     })
     return this.promise().then(() => buf)
   }

@@ -50,3 +50,9 @@ t.test('concat objectMode fails', async t => {
   setTimeout(() => b.end({foo:1}))
   await t.rejects(b.concat(), new Error('cannot concat in objectMode'))
 })
+
+t.test('collect does not set bodyLength in objectMode', t =>
+  new MP({objectMode: true}).end({a:1}).collect().then(data => {
+    t.equal(typeof data.dataLength, 'undefined')
+    t.deepEqual(data, [{a:1}])
+  }))
