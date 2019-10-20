@@ -5,6 +5,7 @@ const Stream = require('stream')
 
 t.equal(MP.isStream(new MP), true, 'a MiniPass is a stream')
 t.equal(MP.isStream(new Stream), true, 'a Stream is a stream')
+t.equal((new MP) instanceof Stream, true, 'a MiniPass is a Stream')
 const w = new EE()
 w.write = () => {}
 w.end = () => {}

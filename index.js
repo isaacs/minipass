@@ -1,5 +1,6 @@
 'use strict'
 const EE = require('events')
+const Stream = require('stream')
 const Yallist = require('yallist')
 const SD = require('string_decoder').StringDecoder
 
@@ -45,7 +46,7 @@ const isArrayBuffer = b => b instanceof ArrayBuffer ||
 
 const isArrayBufferView = b => !Buffer.isBuffer(b) && ArrayBuffer.isView(b)
 
-module.exports = class Minipass extends EE {
+module.exports = class Minipass extends Stream {
   constructor (options) {
     super()
     this[FLOWING] = false
@@ -525,9 +526,10 @@ module.exports = class Minipass extends EE {
   }
 
   static isStream (s) {
-    return !!s && (s instanceof Minipass || s instanceof EE && (
-      typeof s.pipe === 'function' || // readable
-      (typeof s.write === 'function' && typeof s.end === 'function') // writable
-    ))
+    return !!s && (s instanceof Minipass || s instanceof Stream ||
+      s instanceof EE && (
+        typeof s.pipe === 'function' || // readable
+        (typeof s.write === 'function' && typeof s.end === 'function') // writable
+      ))
   }
 }
