@@ -420,12 +420,15 @@ module.exports = class Minipass extends Stream {
     const buf = []
     if (!this[OBJECTMODE])
       buf.dataLength = 0
+    // set the promise first, in case an error is raised
+    // by triggering the flow here.
+    const p = this.promise()
     this.on('data', c => {
       buf.push(c)
       if (!this[OBJECTMODE])
         buf.dataLength += c.length
     })
-    return this.promise().then(() => buf)
+    return p.then(() => buf)
   }
 
   // const data = await stream.concat()
