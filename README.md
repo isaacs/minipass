@@ -224,7 +224,7 @@ src.write('foo')
 const tee = new Minipass()
 tee.pipe(dest1)
 tee.pipe(dest2)
-stream.pipe(tee) // tee gets 'foo', pipes to both locations
+src.pipe(tee) // tee gets 'foo', pipes to both locations
 ```
 
 The same caveat applies to `on('data')` event listeners.  The first one
