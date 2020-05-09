@@ -47,6 +47,13 @@ out:
 - [tap-parser](http://npm.im/tap)
 - [treport](http://npm.im/tap)
 - [minipass-fetch](http://npm.im/minipass-fetch)
+- [pacote](http://npm.im/pacote)
+- [make-fetch-happen](http://npm.im/make-fetch-happen)
+- [cacache](http://npm.im/cacache)
+- [ssri](http://npm.im/ssri)
+- [npm-registry-fetch](http://npm.im/npm-registry-fetch)
+- [minipass-json-stream](http://npm.im/minipass-json-stream)
+- [minipass-sized](http://npm.im/minipass-sized)
 
 ## Differences from Node.js Streams
 
