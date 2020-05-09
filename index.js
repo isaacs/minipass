@@ -97,7 +97,7 @@ module.exports = class Minipass extends Stream {
   }
 
   get objectMode () { return this[OBJECTMODE] }
-  set objectMode (ॐ ) { this[OBJECTMODE] = this[OBJECTMODE] || !!ॐ  }
+  set objectMode (om) { this[OBJECTMODE] = this[OBJECTMODE] || !!om }
 
   write (chunk, encoding, cb) {
     if (this[EOF])
