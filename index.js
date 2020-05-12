@@ -22,6 +22,7 @@ const BUFFERPUSH = Symbol('bufferPush')
 const BUFFERSHIFT = Symbol('bufferShift')
 const OBJECTMODE = Symbol('objectMode')
 const DESTROYED = Symbol('destroyed')
+const NEEDDRAIN = Symbol('needDrain')
 
 // TODO remove when Node v8 support drops
 const doIter = global._MP_NO_ITERATOR_SYMBOLS_  !== '1'
@@ -50,6 +51,7 @@ module.exports = class Minipass extends Stream {
   constructor (options) {
     super()
     this[FLOWING] = false
+    this[NEEDDRAIN] = false
     // whether we're explicitly paused
     this[PAUSED] = false
     this.pipes = new Yallist()
@@ -131,38 +133,45 @@ module.exports = class Minipass extends Stream {
         this.objectMode = true
     }
 
-    // this ensures at this point that the chunk is a buffer or string
-    // don't buffer it up or send it to the decoder
+    // empty string/buffer: don't buffer or send to decoder
+    // some code in the wild uses write('') to trigger a drain event.
+    // so, despite being ugly, we have to allow drain here.
     if (!this.objectMode && !chunk.length) {
-      const ret = this.flowing
+      this[NEEDDRAIN] = !this.flowing
       if (this[BUFFERLENGTH] !== 0)
         this.emit('readable')
-      if (cb)
-        cb()
-      return ret
+    } else {
+      // fast-path writing strings of same encoding to a stream with
+      // an empty buffer, skipping the buffer/decoder dance
+      if (typeof chunk === 'string' && !this[OBJECTMODE] &&
+          // unless it is a string already ready for us to use
+          !(encoding === this[ENCODING] && !this[DECODER].lastNeed)) {
+        chunk = Buffer.from(chunk, encoding)
+      }
+
+      if (Buffer.isBuffer(chunk) && this[ENCODING])
+        chunk = this[DECODER].write(chunk)
+
+      if (this.flowing) {
+        this.emit('data', chunk)
+        // if we got backpressure from a downstream, we need a drain
+        this[NEEDDRAIN] = !this.flowing
+      } else {
+        this[BUFFERPUSH](chunk)
+        if (this[BUFFERLENGTH] !== 0)
+          this.emit('readable')
+        // need a drain if the buffer was not fully cleared in 'readable'
+        this[NEEDDRAIN] = this[BUFFERLENGTH] !== 0
+      }
     }
 
-    // fast-path writing strings of same encoding to a stream with
-    // an empty buffer, skipping the buffer/decoder dance
-    if (typeof chunk === 'string' && !this[OBJECTMODE] &&
-        // unless it is a string already ready for us to use
-        !(encoding === this[ENCODING] && !this[DECODER].lastNeed)) {
-      chunk = Buffer.from(chunk, encoding)
-    }
 
-    if (Buffer.isBuffer(chunk) && this[ENCODING])
-      chunk = this[DECODER].write(chunk)
+    // might drain in the cb, too
+    if (cb)
+      cb()
 
-    try {
-      return this.flowing
-        ? (this.emit('data', chunk), this.flowing)
-        : (this[BUFFERPUSH](chunk), false)
-    } finally {
-      if (this[BUFFERLENGTH] !== 0)
-        this.emit('readable')
-      if (cb)
-        cb()
-    }
+    // only return false if we need to drain something out later
+    return !this[NEEDDRAIN]
   }
 
   read (n) {
@@ -332,7 +341,8 @@ module.exports = class Minipass extends Stream {
       else if (isEndish(ev) && this[EMITTED_END]) {
         super.emit(ev)
         this.removeAllListeners(ev)
-      }
+      } else if (ev === 'readable' && this[BUFFERLENGTH] !== 0)
+        super.emit(ev)
     }
   }
 
@@ -393,6 +403,12 @@ module.exports = class Minipass extends Stream {
       // don't emit close before 'end' and 'finish'
       if (!this[EMITTED_END] && !this[DESTROYED])
         return
+    } else if (ev === 'drain') {
+      if (this[NEEDDRAIN]) {
+        this[NEEDDRAIN] = false
+        super.emit('drain')
+      }
+      return
     }
 
     // TODO: replace with a spread operator when Node v4 support drops
