@@ -60,7 +60,7 @@ out:
 There are several things that make Minipass streams different from (and in
 some ways superior to) Node.js core streams.
 
-Please read these caveats if you are familiar with noode-core streams and
+Please read these caveats if you are familiar with node-core streams and
 intend to use Minipass streams in your programs.
 
 ### Timing
