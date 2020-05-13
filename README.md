@@ -598,7 +598,7 @@ class NDJSONDecode extends Minipass {
     const jsonData = (this._jsonBuffer + chunk).split('\n')
     this._jsonBuffer = jsonData.pop()
     for (let i = 0; i < jsonData.length; i++) {
-      let parsed
+      let parsed = jsonData[i]
       try {
         super.write(parsed)
       } catch (er) {
