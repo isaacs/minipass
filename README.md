@@ -7,7 +7,7 @@ stream](https://nodejs.org/api/stream.html#stream_class_stream_passthrough)
 fast](https://docs.google.com/spreadsheets/d/1oObKSrVwLX_7Ut4Z6g3fZW-AX1j1-k6w-cDsrkaSbHM/edit#gid=0)
 for objects, strings, and buffers.
 
-Supports pipe()ing (including multi-pipe() and backpressure transmission),
+Supports `pipe()`ing (including multi-`pipe()` and backpressure transmission),
 buffering data until either a `data` event handler or `pipe()` is added (so
 you don't lose the first chunk), and most other cases where PassThrough is
 a good idea.
@@ -44,8 +44,8 @@ out:
 - [minipass-flush](http://npm.im/minipass-flush)
 - [minipass-pipeline](http://npm.im/minipass-pipeline)
 - [tap](http://npm.im/tap)
-- [tap-parser](http://npm.im/tap)
-- [treport](http://npm.im/tap)
+- [tap-parser](http://npm.im/tap-parser)
+- [treport](http://npm.im/treport)
 - [minipass-fetch](http://npm.im/minipass-fetch)
 - [pacote](http://npm.im/pacote)
 - [make-fetch-happen](http://npm.im/make-fetch-happen)
@@ -472,7 +472,7 @@ const mp = new Minipass({ encoding: 'utf8' })
 // some source of some data
 let i = 5
 const inter = setInterval(() => {
-  if (i --> 0)
+  if (i-- > 0)
     mp.write(Buffer.from('foo\n', 'utf8'))
   else {
     mp.end()
@@ -598,9 +598,9 @@ class NDJSONDecode extends Minipass {
     const jsonData = (this._jsonBuffer + chunk).split('\n')
     this._jsonBuffer = jsonData.pop()
     for (let i = 0; i < jsonData.length; i++) {
-      let parsed
       try {
-        super.write(parsed)
+        // JSON.parse can throw, emit an error on that
+        super.write(JSON.parse(jsonData[i]))
       } catch (er) {
         this.emit('error', er)
         continue
