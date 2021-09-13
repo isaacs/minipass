@@ -12,6 +12,7 @@ const EOF = Symbol('EOF')
 const MAYBE_EMIT_END = Symbol('maybeEmitEnd')
 const EMITTED_END = Symbol('emittedEnd')
 const EMITTING_END = Symbol('emittingEnd')
+const EMITTED_ERROR = Symbol('emittedError')
 const CLOSED = Symbol('closed')
 const READ = Symbol('read')
 const FLUSH = Symbol('flush')
@@ -70,6 +71,7 @@ module.exports = class Minipass extends Stream {
     this[EMITTED_END] = false
     this[EMITTING_END] = false
     this[CLOSED] = false
+    this[EMITTED_ERROR] = null
     this.writable = true
     this.readable = true
     this[BUFFERLENGTH] = 0
@@ -343,6 +345,8 @@ module.exports = class Minipass extends Stream {
       else if (isEndish(ev) && this[EMITTED_END]) {
         super.emit(ev)
         this.removeAllListeners(ev)
+      } else if (ev === 'error' && this[EMITTED_ERROR]) {
+        fn.call(this, this[EMITTED_ERROR])
       }
     }
   }
@@ -404,6 +408,8 @@ module.exports = class Minipass extends Stream {
       // don't emit close before 'end' and 'finish'
       if (!this[EMITTED_END] && !this[DESTROYED])
         return
+    } else if (ev === 'error') {
+      this[EMITTED_ERROR] = data
     }
 
     // TODO: replace with a spread operator when Node v4 support drops
@@ -456,8 +462,8 @@ module.exports = class Minipass extends Stream {
   promise () {
     return new Promise((resolve, reject) => {
       this.on(DESTROYED, () => reject(new Error('stream destroyed')))
-      this.on('end', () => resolve())
       this.on('error', er => reject(er))
+      this.on('end', () => resolve())
     })
   }
 
