@@ -54,5 +54,5 @@ t.test('concat objectMode fails', async t => {
 t.test('collect does not set bodyLength in objectMode', t =>
   new MP({objectMode: true}).end({a:1}).collect().then(data => {
     t.equal(typeof data.dataLength, 'undefined')
-    t.deepEqual(data, [{a:1}])
+    t.same(data, [{a:1}])
   }))

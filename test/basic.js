@@ -17,7 +17,7 @@ t.test('some basic piping and writing', async t => {
   let sawDestData = false
   dest.once('data', chunk => {
     sawDestData = true
-    t.isa(chunk, Buffer)
+    t.type(chunk, Buffer)
   })
   t.equal(mp.pipe(dest), dest, 'pipe returns dest')
   t.ok(sawDestData, 'got data becasue pipe() flushes')
