@@ -1,4 +1,8 @@
 'use strict'
+const proc = typeof process === 'object' && process ? process : {
+  stdout: null,
+  stderr: null,
+}
 const EE = require('events')
 const Stream = require('stream')
 const Yallist = require('yallist')
@@ -310,7 +314,7 @@ module.exports = class Minipass extends Stream {
 
     const ended = this[EMITTED_END]
     opts = opts || {}
-    if (dest === process.stdout || dest === process.stderr)
+    if (dest === proc.stdout || dest === proc.stderr)
       opts.end = false
     else
       opts.end = opts.end !== false
