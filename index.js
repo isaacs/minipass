@@ -5,7 +5,6 @@ const proc = typeof process === 'object' && process ? process : {
 }
 const EE = require('events')
 const Stream = require('stream')
-const Yallist = require('yallist')
 const SD = require('string_decoder').StringDecoder
 
 const EOF = Symbol('EOF')
@@ -57,8 +56,8 @@ module.exports = class Minipass extends Stream {
     this[FLOWING] = false
     // whether we're explicitly paused
     this[PAUSED] = false
-    this.pipes = new Yallist()
-    this.buffer = new Yallist()
+    this.pipes = []
+    this.buffer = []
     this[OBJECTMODE] = options && options.objectMode || false
     if (this[OBJECTMODE])
       this[ENCODING] = null
@@ -196,16 +195,12 @@ module.exports = class Minipass extends Stream {
 
       if (this.buffer.length > 1 && !this[OBJECTMODE]) {
         if (this.encoding)
-          this.buffer = new Yallist([
-            Array.from(this.buffer).join('')
-          ])
+          this.buffer = [this.buffer.join('')]
         else
-          this.buffer = new Yallist([
-            Buffer.concat(Array.from(this.buffer), this[BUFFERLENGTH])
-          ])
+          this.buffer = [Buffer.concat(this.buffer, this[BUFFERLENGTH])]
       }
 
-      return this[READ](n || null, this.buffer.head.value)
+      return this[READ](n || null, this.buffer[0])
     } finally {
       this[MAYBE_EMIT_END]()
     }
@@ -215,7 +210,7 @@ module.exports = class Minipass extends Stream {
     if (n === chunk.length || n === null)
       this[BUFFERSHIFT]()
     else {
-      this.buffer.head.value = chunk.slice(n)
+      this.buffer[0] = chunk.slice(n)
       chunk = chunk.slice(0, n)
       this[BUFFERLENGTH] -= n
     }
@@ -299,7 +294,7 @@ module.exports = class Minipass extends Stream {
       if (this[OBJECTMODE])
         this[BUFFERLENGTH] -= 1
       else
-        this[BUFFERLENGTH] -= this.buffer.head.value.length
+        this[BUFFERLENGTH] -= this.buffer[0].length
     }
     return this.buffer.shift()
   }
@@ -536,7 +531,7 @@ module.exports = class Minipass extends Stream {
     this[DESTROYED] = true
 
     // throw away all buffered data, it's never coming out
-    this.buffer = new Yallist()
+    this.buffer.length = 0
     this[BUFFERLENGTH] = 0
 
     if (typeof this.close === 'function' && !this[CLOSED])
