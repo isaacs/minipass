@@ -92,6 +92,7 @@ const main = async () => {
   }
 
   console.log(JSON.stringify(results, 0, 2))
+  fs.writeFileSync('results.json', JSON.stringify(results, 0, 2) + '\n')
 
   // write out the results.tab from the top level
   if (impl === undefined) {
