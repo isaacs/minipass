@@ -1,4 +1,3 @@
-'use strict'
 const stream = require('stream')
 module.exports = class ExtendTransform extends stream.Transform {
   constructor (opts) {

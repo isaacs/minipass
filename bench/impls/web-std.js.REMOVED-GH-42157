@@ -1,0 +1,13 @@
+const { TransformStream: WebTS } = require('stream/web')
+const { Transform: NodeTS } = require('stream')
+
+module.exports = function PassthroughFromWeb (opt) {
+  if (opt.objectMode) {
+    throw new Error('object mode not supported')
+  }
+  const s = NodeTS.fromWeb(new WebTS())
+  if (opt.encoding) {
+    s.setEncoding(opt.encoding)
+  }
+  return s
+}

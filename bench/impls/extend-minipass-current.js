@@ -1,7 +1,6 @@
-'use strict'
-const MiniPass = require('../..')
+const Minipass = require('../..')
 
-module.exports = class ExtendMiniPass extends MiniPass {
+module.exports = class ExtendMinipass extends Minipass {
   constructor (opts) {
     super(opts)
   }

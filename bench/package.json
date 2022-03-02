@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@npmcli/promise-spawn": "^2.0.0",
+    "@web-std/stream": "^1.0.1",
+    "minipass": "latest",
+    "through2": "^4.0.2"
+  }
+}
