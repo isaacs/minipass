@@ -28,6 +28,9 @@ const OBJECTMODE = Symbol('objectMode')
 const DESTROYED = Symbol('destroyed')
 const EMITDATA = Symbol('emitData')
 const EMITEND = Symbol('emitData')
+const ASYNC = Symbol('async')
+
+const defer = fn => process.nextTick(fn)
 
 // TODO remove when Node v8 support drops
 const doIter = global._MP_NO_ITERATOR_SYMBOLS_  !== '1'
@@ -82,6 +85,7 @@ module.exports = class Minipass extends Stream {
       this[ENCODING] = options && options.encoding || null
     if (this[ENCODING] === 'buffer')
       this[ENCODING] = null
+    this[ASYNC] = options && !!options.async || false
     this[DECODER] = this[ENCODING] ? new SD(this[ENCODING]) : null
     this[EOF] = false
     this[EMITTED_END] = false
@@ -121,6 +125,9 @@ module.exports = class Minipass extends Stream {
   get objectMode () { return this[OBJECTMODE] }
   set objectMode (om) { this[OBJECTMODE] = this[OBJECTMODE] || !!om }
 
+  get ['async'] () { return this[ASYNC] }
+  set ['async'] (a) { this[ASYNC] = this[ASYNC] || !!a }
+
   write (chunk, encoding, cb) {
     if (this[EOF])
       throw new Error('write after end')
@@ -138,6 +145,8 @@ module.exports = class Minipass extends Stream {
 
     if (!encoding)
       encoding = 'utf8'
+
+    const fn = this[ASYNC] ? defer : f => f()
 
     // convert array buffers and typed array views into buffers
     // at some point in the future, we may want to do the opposite!
@@ -169,7 +178,7 @@ module.exports = class Minipass extends Stream {
         this.emit('readable')
 
       if (cb)
-        cb()
+        fn(cb)
 
       return this.flowing
     }
@@ -180,7 +189,7 @@ module.exports = class Minipass extends Stream {
       if (this[BUFFERLENGTH] !== 0)
         this.emit('readable')
       if (cb)
-        cb()
+        fn(cb)
       return this.flowing
     }
 
@@ -208,7 +217,7 @@ module.exports = class Minipass extends Stream {
       this.emit('readable')
 
     if (cb)
-      cb()
+      fn(cb)
 
     return this.flowing
   }
@@ -358,7 +367,10 @@ module.exports = class Minipass extends Stream {
         dest.end()
     } else {
       this.pipes.push(new Pipe(this, dest, opts))
-      this[RESUME]()
+      if (this[ASYNC])
+        defer(() => this[RESUME]())
+      else
+        this[RESUME]()
     }
 
     return dest
@@ -378,7 +390,10 @@ module.exports = class Minipass extends Stream {
       super.emit(ev)
       this.removeAllListeners(ev)
     } else if (ev === 'error' && this[EMITTED_ERROR]) {
-      fn.call(this, this[EMITTED_ERROR])
+      if (this[ASYNC])
+        defer(() => fn.call(this, this[EMITTED_ERROR]))
+      else
+        fn.call(this, this[EMITTED_ERROR])
     }
     return ret
   }
@@ -408,10 +423,14 @@ module.exports = class Minipass extends Stream {
     if (ev !== 'error' && ev !== 'close' && ev !== DESTROYED && this[DESTROYED])
       return
     else if (ev === 'data') {
-      return data ? this[EMITDATA](data) : false
+      return !data ? false
+        : this[ASYNC] ? defer(() => this[EMITDATA](data))
+        : this[EMITDATA](data)
     } else if (ev === 'end') {
       // only actual end gets this treatment
-      return this[EMITTED_END] ? false : this[EMITEND]()
+      return this[EMITTED_END] ? false
+        : this[ASYNC] ? defer(() => this[EMITEND]())
+        : this[EMITEND]()
     } else if (ev === 'close') {
       this[CLOSED] = true
       // don't emit close before 'end' and 'finish'
