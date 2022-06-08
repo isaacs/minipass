@@ -63,6 +63,10 @@ some ways superior to) Node.js core streams.
 Please read these caveats if you are familiar with node-core streams and
 intend to use Minipass streams in your programs.
 
+You can avoid most of these differences entirely (for a very
+small performance penalty) by setting `{async: true}` in the
+constructor options.
+
 ### Timing
 
 Minipass streams are designed to support synchronous use-cases.  Thus, data
@@ -82,6 +86,82 @@ This non-deferring approach makes Minipass streams much easier to reason
 about, especially in the context of Promises and other flow-control
 mechanisms.
 
+Example:
+
+```js
+const Minipass = require('minipass')
+const stream = new Minipass({ async: true })
+stream.on('data', () => console.log('data event'))
+console.log('before write')
+stream.write('hello')
+console.log('after write')
+// output:
+// before write
+// data event
+// after write
+```
+
+### Exception: Async Opt-In
+
+If you wish to have a Minipass stream with behavior that more
+closely mimics Node.js core streams, you can set the stream in
+async mode either by setting `async: true` in the constructor
+options, or by setting `stream.async = true` later on.
+
+```js
+const Minipass = require('minipass')
+const asyncStream = new Minipass({ async: true })
+asyncStream.on('data', () => console.log('data event'))
+console.log('before write')
+asyncStream.write('hello')
+console.log('after write')
+// output:
+// before write
+// after write
+// data event <-- this is deferred until the next tick
+```
+
+Switching _out_ of async mode is unsafe, as it could cause data
+corruption, and so is not enabled.  Example:
+
+```js
+const Minipass = require('minipass')
+const stream = new Minipass({ encoding: 'utf8' })
+stream.on('data', chunk => console.log(chunk))
+stream.async = true
+console.log('before writes')
+stream.write('hello')
+setStreamSyncAgainSomehow(stream) // <-- this doesn't actually exist!
+stream.write('world')
+console.log('after writes')
+// hypothetical output would be:
+// before writes
+// world
+// after writes
+// hello
+// NOT GOOD!
+```
+
+To avoid this problem, once set into async mode, any attempt to
+make the stream sync again will be ignored.
+
+```js
+const Minipass = require('minipass')
+const stream = new Minipass({ encoding: 'utf8' })
+stream.on('data', chunk => console.log(chunk))
+stream.async = true
+console.log('before writes')
+stream.write('hello')
+stream.async = false // <-- no-op, stream already async
+stream.write('world')
+console.log('after writes')
+// actual output:
+// before writes
+// after writes
+// hello
+// world
+```
+
 ### No High/Low Water Marks
 
 Node.js core streams will optimistically fill up a buffer, returning `true`
@@ -96,6 +176,9 @@ guarantees, that the data is already there by the time `write()` returns).
 If the data has nowhere to go, then `write()` returns false, and the data
 sits in a buffer, to be drained out immediately as soon as anyone consumes
 it.
+
+Since nothing is ever buffered unnecessarily, there is much less
+copying data, and less bookkeeping about buffer capacity levels.
 
 ### Hazards of Buffering (or: Why Minipass Is So Fast)
 
@@ -181,6 +264,8 @@ moving on to the next entry in an archive parse stream, etc.) then be sure
 to call `stream.pause()` on creation, and then `stream.resume()` once you
 are ready to respond to the `end` event.
 
+However, this is _usually_ not a problem because:
+
 ### Emit `end` When Asked
 
 One hazard of immediately emitting `'end'` is that you may not yet have had
@@ -196,6 +281,18 @@ Promise.)
 To prevent calling handlers multiple times who would not expect multiple
 ends to occur, all listeners are removed from the `'end'` event whenever it
 is emitted.
+
+### Emit `error` When Asked
+
+The most recent error object passed to the `'error'` event is
+stored on the stream.  If a new `'error'` event handler is added,
+and an error was previously emitted, then the event handler will
+be called immediately (or on `process.nextTick` in the case of
+async streams).
+
+This makes it much more difficult to end up trying to interact
+with a broken stream, if the error handler is added after an
+error was previously emitted.
 
 ### Impact of "immediate flow" on Tee-streams
 
@@ -221,7 +318,7 @@ src.pipe(dest1) // 'foo' chunk flows to dest1 immediately, and is gone
 src.pipe(dest2) // gets nothing!
 ```
 
-The solution is to create a dedicated tee-stream junction that pipes to
+One solution is to create a dedicated tee-stream junction that pipes to
 both locations, and then pipe to _that_ instead.
 
 ```js
@@ -257,6 +354,13 @@ tee.on('data', handler1)
 tee.on('data', handler2)
 src.pipe(tee)
 ```
+
+All of the hazards in this section are avoided by setting `{
+async: true }` in the Minipass constructor, or by setting
+`stream.async = true` afterwards.  Note that this does add some
+overhead, so should only be done in cases where you are willing
+to lose a bit of performance in order to avoid having to refactor
+program logic.
 
 ## USAGE
 
