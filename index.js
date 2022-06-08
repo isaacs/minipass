@@ -372,6 +372,8 @@ module.exports = class Minipass extends Stream {
     const ret = super.on(ev, fn)
     if (ev === 'data' && !this.pipes.length && !this.flowing)
       this[RESUME]()
+    else if (ev === 'readable' && this[BUFFERLENGTH] !== 0)
+      super.emit('readable')
     else if (isEndish(ev) && this[EMITTED_END]) {
       super.emit(ev)
       this.removeAllListeners(ev)
