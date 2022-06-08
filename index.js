@@ -62,10 +62,13 @@ class Pipe {
     this.ondrain = () => src[RESUME]()
     dest.on('drain', this.ondrain)
   }
+  unpipe () {
+    this.dest.removeListener('drain', this.ondrain)
+  }
   end () {
+    this.unpipe()
     if (this.opts.end)
       this.dest.end()
-    this.dest.removeListener('drain', this.ondrain)
   }
 }
 
@@ -374,6 +377,14 @@ module.exports = class Minipass extends Stream {
     }
 
     return dest
+  }
+
+  unpipe (dest) {
+    const p = this.pipes.find(p => p.dest === dest)
+    if (p) {
+      this.pipes.splice(this.pipes.indexOf(p), 1)
+      p.unpipe()
+    }
   }
 
   addListener (ev, fn) {

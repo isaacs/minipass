@@ -17,9 +17,6 @@ from this stream via `'data'` events or by calling `pipe()` into some other
 stream.  Calling `read()` requires the buffer to be flattened in some
 cases, which requires copying memory.
 
-There is also no `unpipe()` method.  Once you start piping, there is no
-stopping it!
-
 If you set `objectMode: true` in the options, then whatever is written will
 be emitted.  Otherwise, it'll do a minimal amount of Buffer copying to
 ensure proper Streams semantics when `read(n)` is called.
@@ -383,6 +380,10 @@ mp.end('bar')
   by default if you write() something other than a string or Buffer at any
   point.  Setting `objectMode: true` will prevent setting any encoding
   value.
+* `async` Defaults to `false`.  Set to `true` to defer data
+  emission until next tick.  This reduces performance slightly,
+  but makes Minipass streams use timing behavior closer to Node
+  core streams.  See [Timing](#timing) for more details.
 
 ### API
 
@@ -404,9 +405,12 @@ streams.
   from being emitted for empty streams until the stream is resumed.
 * `resume()` - Resume the stream.  If there's data in the buffer, it is all
   discarded.  Any buffered events are immediately emitted.
-* `pipe(dest)` - Send all output to the stream provided.  There is no way
-  to unpipe.  When data is emitted, it is immediately written to any and
-  all pipe destinations.
+* `pipe(dest)` - Send all output to the stream provided.  When
+  data is emitted, it is immediately written to any and all pipe
+  destinations.  (Or written on next tick in `async` mode.)
+* `unpipe(dest)` - Stop piping to the destination stream.  This
+  is immediate, meaning that any asynchronously queued data will
+  _not_ make it to the destination when running in `async` mode.
 * `on(ev, fn)`, `emit(ev, fn)` - Minipass streams are EventEmitters.  Some
   events are given special treatment, however.  (See below under "events".)
 * `promise()` - Returns a Promise that resolves when the stream emits
