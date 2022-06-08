@@ -411,6 +411,13 @@ streams.
 * `unpipe(dest)` - Stop piping to the destination stream.  This
   is immediate, meaning that any asynchronously queued data will
   _not_ make it to the destination when running in `async` mode.
+    * `options.end` - Boolean, end the destination stream when
+      the source stream ends.  Default `true`.
+    * `options.proxyErrors` - Boolean, proxy `error` events from
+      the source stream to the destination stream.  Note that
+      errors are _not_ proxied after the pipeline terminates,
+      either due to the source emitting `'end'` or manually
+      unpiping with `src.unpipe(dest)`.  Default `false`.
 * `on(ev, fn)`, `emit(ev, fn)` - Minipass streams are EventEmitters.  Some
   events are given special treatment, however.  (See below under "events".)
 * `promise()` - Returns a Promise that resolves when the stream emits

@@ -58,6 +58,7 @@ const isArrayBufferView = b => !Buffer.isBuffer(b) && ArrayBuffer.isView(b)
 
 class Pipe {
   constructor (src, dest, opts) {
+    this.src = src
     this.dest = dest
     this.opts = opts
     this.ondrain = () => src[RESUME]()
@@ -66,6 +67,8 @@ class Pipe {
   unpipe () {
     this.dest.removeListener('drain', this.ondrain)
   }
+  // istanbul ignore next - only here for the prototype
+  proxyErrors () {}
   end () {
     this.unpipe()
     if (this.opts.end)
@@ -73,6 +76,17 @@ class Pipe {
   }
 }
 
+class PipeProxyErrors extends Pipe {
+  unpipe () {
+    this.src.removeListener('error', this.proxyErrors)
+    super.unpipe()
+  }
+  constructor (src, dest, opts) {
+    super(src, dest, opts)
+    this.proxyErrors = er => dest.emit('error', er)
+    src.on('error', this.proxyErrors)
+  }
+}
 
 module.exports = class Minipass extends Stream {
   constructor (options) {
@@ -364,13 +378,15 @@ module.exports = class Minipass extends Stream {
       opts.end = false
     else
       opts.end = opts.end !== false
+    opts.proxyErrors = !!opts.proxyErrors
 
     // piping an ended stream ends immediately
     if (ended) {
       if (opts.end)
         dest.end()
     } else {
-      this.pipes.push(new Pipe(this, dest, opts))
+      this.pipes.push(!opts.proxyErrors ? new Pipe(this, dest, opts)
+        : new PipeProxyErrors(this, dest, opts))
       if (this[ASYNC])
         defer(() => this[RESUME]())
       else
