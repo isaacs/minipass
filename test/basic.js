@@ -385,7 +385,9 @@ t.test('objectMode', t => {
     t.end()
   })
   t.ok(mp.write(a))
-  t.ok(mp.write(b))
+  let cbcalled = false
+  t.ok(mp.write(b, () => cbcalled = true))
+  t.equal(cbcalled, true)
   mp.end()
 })
 

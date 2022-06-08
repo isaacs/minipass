@@ -1,14 +1,21 @@
 // if you go much higher the core streams just choke and take forever lol
 const N = Math.floor(128*1024 / Math.PI)
 const fs = require('fs')
-const { basename } = require('path')
-const impls = fs.readdirSync(__dirname + '/impls')
-  .filter(f => /\.js$/.test(f)).map(f => basename(f, '.js'))
+// const { basename } = require('path')
+// const impls = fs.readdirSync(__dirname + '/impls')
+//   .filter(f => /\.js$/.test(f)).map(f => basename(f, '.js'))
+const impls = [
+  'baseline',
+  'minipass-current',
+  'extend-minipass-current',
+  'core-extend-transform',
+  'core-passthrough',
+]
 
 const promiseSpawn = require('@npmcli/promise-spawn')
 
 const main = async () => {
-  const [node, _, impl, cse, len] = process.argv
+  const [node, _, impl, cse, len, type] = process.argv
   const opt = { stdioString: true, stdio: ['ignore', 'pipe', 'inherit'] }
   const results = {}
   if (impl === undefined) {
@@ -56,7 +63,8 @@ const main = async () => {
       str: {encoding:'utf8'},
       obj: {objectMode: true},
     }
-    for (const [name, opt] of Object.entries(opts)) {
+    const typeOpts = type ? [[type, opts[type]]] : Object.entries(opts)
+    for (const [name, opt] of typeOpts) {
       await new Promise((res, rej) => {
         process.stderr.write(`${impl} ${cse} ${len} ${name} ... `)
         const { src, start, dest, dest2 } = setupPipeline(impl, len, cse, opt)

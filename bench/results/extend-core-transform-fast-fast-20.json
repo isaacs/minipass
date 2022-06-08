@@ -1,0 +1,8 @@
+{
+  "obj": {
+    "code": "MODULE_NOT_FOUND",
+    "requireStack": [
+      "/Users/isaacs/dev/isaacs/minipass/bench/index.js"
+    ]
+  }
+}
