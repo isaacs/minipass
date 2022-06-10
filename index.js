@@ -27,10 +27,11 @@ const BUFFERSHIFT = Symbol('bufferShift')
 const OBJECTMODE = Symbol('objectMode')
 const DESTROYED = Symbol('destroyed')
 const EMITDATA = Symbol('emitData')
-const EMITEND = Symbol('emitData')
+const EMITEND = Symbol('emitEnd')
+const EMITEND2 = Symbol('emitEnd2')
 const ASYNC = Symbol('async')
 
-const defer = fn => process.nextTick(fn)
+const defer = fn => Promise.resolve().then(fn)
 
 // TODO remove when Node v8 support drops
 const doIter = global._MP_NO_ITERATOR_SYMBOLS_  !== '1'
@@ -427,10 +428,7 @@ module.exports = class Minipass extends Stream {
         : this[ASYNC] ? defer(() => this[EMITDATA](data))
         : this[EMITDATA](data)
     } else if (ev === 'end') {
-      // only actual end gets this treatment
-      return this[EMITTED_END] ? false
-        : this[ASYNC] ? defer(() => this[EMITEND]())
-        : this[EMITEND]()
+      return this[EMITEND]()
     } else if (ev === 'close') {
       this[CLOSED] = true
       // don't emit close before 'end' and 'finish'
@@ -471,9 +469,18 @@ module.exports = class Minipass extends Stream {
   }
 
   [EMITEND] () {
+    if (this[EMITTED_END])
+      return
+
     this[EMITTED_END] = true
     this.readable = false
+    if (this[ASYNC])
+      defer(() => this[EMITEND2]())
+    else
+      this[EMITEND2]()
+  }
 
+  [EMITEND2] () {
     if (this[DECODER]) {
       const data = this[DECODER].end()
       if (data) {
