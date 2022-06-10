@@ -6,7 +6,9 @@ const fs = require('fs')
 //   .filter(f => /\.js$/.test(f)).map(f => basename(f, '.js'))
 const impls = [
   'baseline',
+  'minipass-latest',
   'minipass-current',
+  'minipass-current-async',
   'extend-minipass-current',
   'core-extend-transform',
   'core-passthrough',
@@ -78,6 +80,7 @@ const main = async () => {
         let ended2 = !dest2
         if (dest2) {
           dest2.on('finish', () => {
+            if (ended2) throw new Error('emitted multiple dest2.finish')
             ended2 = true
             if (ended1) {
               end()
@@ -85,6 +88,7 @@ const main = async () => {
           })
         }
         dest.on('finish', () => {
+          if (ended1) throw new Error('emitted multiple dest1.finish')
           ended1 = true
           if (ended2) {
             end()
