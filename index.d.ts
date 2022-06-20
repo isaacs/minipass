@@ -2,7 +2,7 @@
 import { EventEmitter } from 'events'
 import { Stream } from 'stream'
 
-type Encoding = BufferEncoding | 'buffer' | null
+export type Encoding = BufferEncoding | 'buffer' | null
 
 interface Writable extends EventEmitter {
   end(): any
@@ -18,7 +18,7 @@ interface Readable extends EventEmitter {
 interface Pipe<R, W> {
   src: Minipass<R, W>
   dest: Writable
-  opts: Minipass.PipeOptions
+  opts: PipeOptions
 }
 
 type DualIterable<T> = Iterable<T> & AsyncIterable<T>
@@ -76,8 +76,8 @@ export default class Minipass<
   // Options required if not reading buffers
   constructor(
     ...args: RType extends Buffer
-      ? [options?: Minipass.Options<RType>]
-      : [options: Minipass.Options<RType>]
+      ? [options?: Options<RType>]
+      : [options: Options<RType>]
   )
 
   write(chunk: WType, cb?: () => void): boolean
@@ -93,7 +93,7 @@ export default class Minipass<
 
   concat(): RType extends BufferOrString ? Promise<RType> : never
   destroy(er?: any): void
-  pipe<W extends Writable>(dest: W, opts?: Minipass.PipeOptions): W
+  pipe<W extends Writable>(dest: W, opts?: PipeOptions): W
   unpipe<W extends Writable>(dest: W): void
 
   /**
@@ -137,15 +137,13 @@ interface ObjectModeOptions {
   async?: boolean
 }
 
-declare namespace Minipass {
-  interface PipeOptions {
-    end?: boolean
-    proxyErrors?: boolean
-  }
-
-  type Options<T> = T extends string
-    ? StringOptions
-    : T extends Buffer
-    ? BufferOptions
-    : ObjectModeOptions
+export declare interface PipeOptions {
+  end?: boolean
+  proxyErrors?: boolean
 }
+
+export declare type Options<T> = T extends string
+  ? StringOptions
+  : T extends Buffer
+  ? BufferOptions
+  : ObjectModeOptions
