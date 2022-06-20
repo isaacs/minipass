@@ -3,6 +3,7 @@
   "version": "3.3.4",
   "description": "minimal implementation of a PassThrough stream",
   "main": "index.js",
+  "types": "index.d.ts",
   "dependencies": {
     "yallist": "^4.0.0"
   },
