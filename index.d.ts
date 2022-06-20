@@ -27,7 +27,7 @@ type ContiguousData = Buffer | ArrayBufferLike | ArrayBufferView | string
 
 type BufferOrString = Buffer | string
 
-declare class Minipass<
+export default class Minipass<
     RType extends any = Buffer,
     WType extends any = RType extends BufferOrString ? ContiguousData : RType
   >
@@ -94,7 +94,7 @@ declare class Minipass<
   concat(): RType extends BufferOrString ? Promise<RType> : never
   destroy(er?: any): void
   pipe<W extends Writable>(dest: W, opts?: Minipass.PipeOptions): W
-  unpipe<W extends Writable>(dest: W)
+  unpipe<W extends Writable>(dest: W): void
 
   /**
    * alias for on()
