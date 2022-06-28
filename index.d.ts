@@ -76,8 +76,8 @@ export default class Minipass<
   // Options required if not reading buffers
   constructor(
     ...args: RType extends Buffer
-      ? [options?: Options<RType>]
-      : [options: Options<RType>]
+      ? [] | [Options<RType>]
+      : [Options<RType>]
   )
 
   write(chunk: WType, cb?: () => void): boolean
