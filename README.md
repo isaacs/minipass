@@ -87,7 +87,7 @@ Example:
 
 ```js
 const Minipass = require('minipass')
-const stream = new Minipass({ async: true })
+const stream = new Minipass()
 stream.on('data', () => console.log('data event'))
 console.log('before write')
 stream.write('hello')
