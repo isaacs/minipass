@@ -108,8 +108,8 @@ declare class Minipass<
   // Options required if not reading buffers
   constructor(
     ...args: RType extends Buffer
-      ? [] | [options: Minipass.Options<RType>]
-      : [options: Minipass.Options<RType>]
+      ? [] | [Minipass.Options<RType>]
+      : [Minipass.Options<RType>]
   )
 
   write(chunk: WType, cb?: () => void): boolean
