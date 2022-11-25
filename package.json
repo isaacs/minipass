@@ -19,7 +19,7 @@
   "scripts": {
     "test": "tap",
     "preversion": "npm test",
-    "postversion": "npm publish --tag=next",
+    "postversion": "npm publish",
     "postpublish": "git push origin --follow-tags"
   },
   "repository": {
