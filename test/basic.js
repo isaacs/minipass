@@ -3,7 +3,7 @@ const t = require('tap')
 const EE = require('events').EventEmitter
 
 t.test('some basic piping and writing', async t => {
-  let mp = new MiniPass({ encoding: 'base64' })
+  let mp = new MiniPass({ encoding: 'base64', debugExposeBuffer: true })
   t.notOk(mp.flowing)
   mp.flowing = true
   t.notOk(mp.flowing)
@@ -13,7 +13,7 @@ t.test('some basic piping and writing', async t => {
   t.equal(mp.readable, true)
   t.equal(mp.writable, true)
   t.equal(mp.write('hello'), false)
-  let dest = new MiniPass()
+  let dest = new MiniPass({ debugExposeBuffer: true })
   let sawDestData = false
   dest.once('data', chunk => {
     sawDestData = true
@@ -279,7 +279,7 @@ t.test('emit works with many args', t => {
 })
 
 t.test('emit drain on resume, even if no flush', t => {
-  const mp = new MiniPass()
+  const mp = new MiniPass({ debugExposeBuffer: true })
   mp.encoding = 'utf8'
 
   const chunks = []

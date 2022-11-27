@@ -1,7 +1,7 @@
 const t = require('tap')
 const Minipass = require('../')
 
-const src = new Minipass({ encoding: 'utf8' })
+const src = new Minipass({ encoding: 'utf8', debugExposePipes: true })
 const dest = new Minipass({ encoding: 'utf8' })
 const dest2 = new Minipass({ encoding: 'utf8' })
 const destOut = []

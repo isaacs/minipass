@@ -1,4 +1,8 @@
 /// <reference types="node" />
+
+// Note: marking anything protected or private in the exported
+// class will limit Minipass's ability to be used as the base
+// for mixin classes.
 import { EventEmitter } from 'events'
 import { Stream } from 'stream'
 
@@ -14,12 +18,6 @@ declare namespace Minipass {
     pause(): any
     resume(): any
     pipe(): any
-  }
-
-  interface Pipe<R, W> {
-    src: Minipass<R, W>
-    dest: Writable
-    opts: PipeOptions
   }
 
   type DualIterable<T> = Iterable<T> & AsyncIterable<T>
@@ -75,12 +73,6 @@ declare class Minipass<
   readonly paused: boolean
   readonly emittedEnd: boolean
   readonly destroyed: boolean
-
-  /**
-   * Not technically private or readonly, but not safe to mutate.
-   */
-  private readonly buffer: RType[]
-  private readonly pipes: Minipass.Pipe<RType, WType>[]
 
   /**
    * Technically writable, but mutating it can change the type,
