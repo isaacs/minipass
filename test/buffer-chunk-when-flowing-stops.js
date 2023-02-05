@@ -9,14 +9,14 @@ const Minipass = require('../')
 const t = require('tap')
 
 class Pauser extends Minipass {
-  write (chunk, encoding, callback) {
+  write(chunk, encoding, callback) {
     super.write(chunk, encoding, callback)
     return false
   }
 }
 
-const src = new Minipass({encoding: 'utf8'})
-const pauser = new Pauser({encoding: 'utf8'})
+const src = new Minipass({ encoding: 'utf8' })
+const pauser = new Pauser({ encoding: 'utf8' })
 
 // queue up two chunks while the src is buffering
 src.write('1')

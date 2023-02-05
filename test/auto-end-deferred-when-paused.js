@@ -8,5 +8,8 @@ t.test('do not auto-end empty stream if explicitly paused', t => {
     waitedForEnd = true
     mp.resume()
   })
-  return mp.end().promise().then(() => t.ok(waitedForEnd, 'waited for end'))
+  return mp
+    .end()
+    .promise()
+    .then(() => t.ok(waitedForEnd, 'waited for end'))
 })

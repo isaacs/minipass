@@ -11,8 +11,9 @@ t.test('pipe', t => {
   m.pipe(d2)
   m.write('world')
   m.end()
-  return Promise.all([d1.concat(), d2.concat()])
-    .then(result => t.strictSame(result, ['hello, world', 'hello, world']))
+  return Promise.all([d1.concat(), d2.concat()]).then(result =>
+    t.strictSame(result, ['hello, world', 'hello, world'])
+  )
 })
 
 t.test('pipe split', t => {
@@ -34,8 +35,9 @@ t.test('pipe split', t => {
     m.write('world')
     m.end()
   })
-  return Promise.all([d1.concat(), d2.concat()])
-    .then(result => t.strictSame(result, ['hello, world', 'hello, world']))
+  return Promise.all([d1.concat(), d2.concat()]).then(result =>
+    t.strictSame(result, ['hello, world', 'hello, world'])
+  )
 })
 
 t.test('data event', t => {
@@ -76,7 +78,9 @@ t.test('data event split', t => {
 
 t.test('defer error event', t => {
   const m = new MP()
-  try { m.emit('error', new Error('poop')) } catch (_) {}
+  try {
+    m.emit('error', new Error('poop'))
+  } catch (_) {}
   m.async = true
   let calledErrorHandler = false
   m.on('error', er => {

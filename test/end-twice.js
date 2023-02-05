@@ -7,8 +7,7 @@ t.test('organic', t => {
   const mp = new MP({ encoding: 'utf8' })
 
   let sawEnd = 0
-  mp.on('end', () =>
-    t.equal(sawEnd++, 0, 'should not have seen the end yet'))
+  mp.on('end', () => t.equal(sawEnd++, 0, 'should not have seen the end yet'))
 
   mp.once('data', () => {
     mp.once('data', () => {

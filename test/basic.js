@@ -75,9 +75,10 @@ t.test('base64 -> utf8 piping', t => {
   const dest = new MiniPass({ encoding: 'utf8' })
   mp.pipe(dest)
   let out = ''
-  dest.on('data', c => out += c)
+  dest.on('data', c => (out += c))
   dest.on('end', _ =>
-    t.equal(Buffer.from(out, 'base64').toString('utf8'), butterfly))
+    t.equal(Buffer.from(out, 'base64').toString('utf8'), butterfly)
+  )
   mp.write(butterfly)
   mp.end()
 })
@@ -89,9 +90,10 @@ t.test('utf8 -> base64 piping', t => {
   const dest = new MiniPass({ encoding: 'base64' })
   mp.pipe(dest)
   let out = ''
-  dest.on('data', c => out += c)
+  dest.on('data', c => (out += c))
   dest.on('end', _ =>
-    t.equal(Buffer.from(out, 'base64').toString('utf8'), butterfly))
+    t.equal(Buffer.from(out, 'base64').toString('utf8'), butterfly)
+  )
   mp.write(butterfly)
   mp.end()
 })
@@ -172,7 +174,7 @@ t.test('partial read', async t => {
 t.test('write after end', async t => {
   const mp = new MiniPass()
   let sawEnd = false
-  mp.on('end', _ => sawEnd = true)
+  mp.on('end', _ => (sawEnd = true))
   mp.end('not empty')
   t.throws(_ => mp.write('nope'))
   t.notOk(sawEnd, 'should not get end event yet (not flowing)')
@@ -196,7 +198,7 @@ t.test('write after end', async t => {
 t.test('write cb', async t => {
   const mp = new MiniPass()
   let calledCb = false
-  mp.write('ok', () => calledCb = true)
+  mp.write('ok', () => (calledCb = true))
   t.ok(calledCb)
 })
 
@@ -204,10 +206,10 @@ t.test('end with chunk', async t => {
   let out = ''
   const mp = new MiniPass({ encoding: 'utf8' })
   let sawEnd = false
-  mp.prependListener('end', _ => sawEnd = true)
-  mp.addListener('data', c => out += c)
+  mp.prependListener('end', _ => (sawEnd = true))
+  mp.addListener('data', c => (out += c))
   let endCb = false
-  mp.end('ok', _ => endCb = true)
+  mp.end('ok', _ => (endCb = true))
   t.equal(out, 'ok')
   t.ok(sawEnd, 'should see end event')
   t.ok(endCb, 'end cb should get called')
@@ -231,13 +233,13 @@ t.test('end with chunk pending', async t => {
   t.equal(mp.write('baz'), false)
   t.equal(mp.write('qux'), false)
   let sawEnd = false
-  mp.on('end', _ => sawEnd = true)
+  mp.on('end', _ => (sawEnd = true))
   let endCb = false
-  mp.end(_ => endCb = true)
+  mp.end(_ => (endCb = true))
   t.notOk(endCb, 'endcb should not happen yet')
   t.notOk(sawEnd, 'should not see end yet')
   let out = ''
-  mp.on('data', c => out += c)
+  mp.on('data', c => (out += c))
   t.ok(sawEnd, 'see end after flush')
   t.ok(endCb, 'end cb after flush')
   t.equal(out, 'foobarbazqux')
@@ -248,16 +250,19 @@ t.test('pipe to stderr does not throw', t => {
   const module = JSON.stringify(require.resolve('../'))
   const fs = require('fs')
   const file = __dirname + '/prog.js'
-  fs.writeFileSync(file, `
+  fs.writeFileSync(
+    file,
+    `
     const MP = require(${module})
     const mp = new MP()
     mp.pipe(process.stderr)
     mp.end("hello")
-  `)
+  `
+  )
   let err = ''
   return new Promise(res => {
     const child = spawn(process.execPath, [file])
-    child.stderr.on('data', c => err += c)
+    child.stderr.on('data', c => (err += c))
     child.on('close', (code, signal) => {
       t.equal(code, 0)
       t.equal(signal, null)
@@ -272,7 +277,7 @@ t.test('emit works with many args', t => {
   const mp = new MiniPass()
   t.plan(2)
   mp.on('foo', function (a, b, c, d, e, f, g) {
-    t.same([a,b,c,d,e,f,g], [1,2,3,4,5,6,7])
+    t.same([a, b, c, d, e, f, g], [1, 2, 3, 4, 5, 6, 7])
     t.equal(arguments.length, 7)
   })
   mp.emit('foo', 1, 2, 3, 4, 5, 6, 7)
@@ -284,12 +289,14 @@ t.test('emit drain on resume, even if no flush', t => {
 
   const chunks = []
   class SlowStream extends EE {
-    write (chunk) {
+    write(chunk) {
       chunks.push(chunk)
       setTimeout(_ => this.emit('drain'))
       return false
     }
-    end () { return this.write() }
+    end() {
+      return this.write()
+    }
   }
 
   const ss = new SlowStream()
@@ -329,8 +336,7 @@ t.test('eos works', t => {
   const mp = new MiniPass()
 
   eos(mp, er => {
-    if (er)
-      throw er
+    if (er) throw er
     t.end()
   })
 
@@ -381,12 +387,12 @@ t.test('objectMode', t => {
     t.equal(out.length, 2)
     t.equal(out[0], a)
     t.equal(out[1], b)
-    t.same(out, [ { a: 1 }, { b: 1 } ], 'objs not munged')
+    t.same(out, [{ a: 1 }, { b: 1 }], 'objs not munged')
     t.end()
   })
   t.ok(mp.write(a))
   let cbcalled = false
-  t.ok(mp.write(b, () => cbcalled = true))
+  t.ok(mp.write(b, () => (cbcalled = true)))
   t.equal(cbcalled, true)
   mp.end()
 })
@@ -394,7 +400,7 @@ t.test('objectMode', t => {
 t.test('objectMode no encoding', t => {
   const mp = new MiniPass({
     objectMode: true,
-    encoding: 'utf8'
+    encoding: 'utf8',
   })
   t.equal(mp.encoding, null)
   const a = { a: 1 }
@@ -405,7 +411,7 @@ t.test('objectMode no encoding', t => {
     t.equal(out.length, 2)
     t.equal(out[0], a)
     t.equal(out[1], b)
-    t.same(out, [ { a: 1 }, { b: 1 } ], 'objs not munged')
+    t.same(out, [{ a: 1 }, { b: 1 }], 'objs not munged')
     t.end()
   })
   t.ok(mp.write(a))
@@ -425,15 +431,19 @@ t.test('objectMode read() and buffering', t => {
 })
 
 t.test('set encoding in object mode throws', async t =>
-  t.throws(_ => new MiniPass({ objectMode: true }).encoding = 'utf8',
-           new Error('cannot set encoding in objectMode')))
+  t.throws(
+    _ => (new MiniPass({ objectMode: true }).encoding = 'utf8'),
+    new Error('cannot set encoding in objectMode')
+  )
+)
 
 t.test('set encoding again throws', async t =>
   t.throws(_ => {
     const mp = new MiniPass({ encoding: 'hex' })
     mp.write('ok')
     mp.encoding = 'utf8'
-  }, new Error('cannot change encoding')))
+  }, new Error('cannot change encoding'))
+)
 
 t.test('set encoding with existing buffer', async t => {
   const mp = new MiniPass()

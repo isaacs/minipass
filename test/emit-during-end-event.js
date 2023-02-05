@@ -2,9 +2,8 @@ const Minipass = require('../')
 const t = require('tap')
 
 class FancyEnder extends Minipass {
-  emit (ev, ...data) {
-    if (ev === 'end')
-      this.emit('foo')
+  emit(ev, ...data) {
+    if (ev === 'end') this.emit('foo')
     return super.emit(ev, ...data)
   }
 }

@@ -23,18 +23,15 @@ t.test('end properly when emitting error event', t => {
   mp.on('end', () => {
     mpEnded = true
     t.pass('emitted mp end event')
-    if (pipelineEnded)
-      t.end()
+    if (pipelineEnded) t.end()
   })
   const { emit } = mp
   let flushed = false
   let flushing = false
   mp.emit = (ev, ...data) => {
-    if (ev !== 'end' || flushed)
-      return emit.call(mp, ev, ...data)
+    if (ev !== 'end' || flushed) return emit.call(mp, ev, ...data)
 
-    if (flushing)
-      return
+    if (flushing) return
 
     if (ev === 'end') {
       flushing = true
@@ -56,8 +53,7 @@ t.test('end properly when emitting error event', t => {
     .on('end', () => {
       pipelineEnded = true
       t.pass('pipeline ended')
-      if (mpEnded)
-        t.end()
+      if (mpEnded) t.end()
     })
   mp.end()
 })

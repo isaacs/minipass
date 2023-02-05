@@ -2,7 +2,7 @@
 const t = require('tap')
 global._MP_NO_ITERATOR_SYMBOLS_ = '1'
 const MP = require('../index.js')
-const mp = new MP
+const mp = new MP()
 mp.write('foo')
 setTimeout(() => mp.end())
 t.throws(() => {

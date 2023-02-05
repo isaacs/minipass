@@ -24,17 +24,16 @@ src.write('a')
 src.write('b')
 
 const pipeline = new (class Pipeline extends Minipass {
-  constructor (opt) {
+  constructor(opt) {
     super(opt)
     dest.on('data', c => super.write(c))
     dest.on('end', () => super.end())
   }
-  emit (ev, ...args) {
-    if (ev === 'resume')
-      dest.resume()
+  emit(ev, ...args) {
+    if (ev === 'resume') dest.resume()
     return super.emit(ev, ...args)
   }
-})({ encoding: 'utf8'})
+})({ encoding: 'utf8' })
 
 mid.pipe(dest)
 src.pipe(mid)

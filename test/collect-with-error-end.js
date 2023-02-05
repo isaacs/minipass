@@ -5,4 +5,5 @@ mp.on('end', () => mp.emit('error', poop))
 mp.end('foo')
 const t = require('tap')
 t.test('promise catches error emitted on end', t =>
-  t.rejects(mp.collect(), poop))
+  t.rejects(mp.collect(), poop)
+)

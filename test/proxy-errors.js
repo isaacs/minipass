@@ -7,8 +7,8 @@ t.test('not proxied', t => {
 
   let srcEr = null
   let destEr = null
-  src.on('error', er => srcEr = er)
-  dest.on('error', er => destEr = er)
+  src.on('error', er => (srcEr = er))
+  dest.on('error', er => (destEr = er))
 
   src.pipe(dest)
 
@@ -25,8 +25,8 @@ t.test('proxied', t => {
 
   let srcEr = null
   let destEr = null
-  src.on('error', er => srcEr = er)
-  dest.on('error', er => destEr = er)
+  src.on('error', er => (srcEr = er))
+  dest.on('error', er => (destEr = er))
 
   src.pipe(dest, { proxyErrors: true })
 
@@ -46,8 +46,8 @@ t.test('not proxied after stream end', t => {
 
   let srcEr = null
   let destEr = null
-  src.on('error', er => srcEr = er)
-  dest.on('error', er => destEr = er)
+  src.on('error', er => (srcEr = er))
+  dest.on('error', er => (destEr = er))
 
   src.pipe(dest, { proxyErrors: true })
 
@@ -68,8 +68,8 @@ t.test('not proxied after unpipe', t => {
 
   let srcEr = null
   let destEr = null
-  src.on('error', er => srcEr = er)
-  dest.on('error', er => destEr = er)
+  src.on('error', er => (srcEr = er))
+  dest.on('error', er => (destEr = er))
 
   src.pipe(dest, { proxyErrors: true })
   src.unpipe(dest)
