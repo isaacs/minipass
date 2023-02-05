@@ -27,7 +27,10 @@ const BUFFERLENGTH = Symbol('bufferLength')
 const BUFFERPUSH = Symbol('bufferPush')
 const BUFFERSHIFT = Symbol('bufferShift')
 const OBJECTMODE = Symbol('objectMode')
+// internal event when stream is destroyed
 const DESTROYED = Symbol('destroyed')
+// internal event when stream has an error
+const ERROR = Symbol('error')
 const EMITDATA = Symbol('emitData')
 const EMITEND = Symbol('emitEnd')
 const EMITEND2 = Symbol('emitEnd2')
@@ -474,6 +477,7 @@ module.exports = class Minipass extends Stream {
       return ret
     } else if (ev === 'error') {
       this[EMITTED_ERROR] = data
+      super.emit(ERROR, data)
       const ret = super.emit('error', data)
       this[MAYBE_EMIT_END]()
       return ret
@@ -570,20 +574,26 @@ module.exports = class Minipass extends Stream {
   }
 
   // for await (let chunk of stream)
-  [ASYNCITERATOR] () {
+  [ASYNCITERATOR]() {
+    let stopped = false
+    const stop = () => {
+      this.pause()
+      stopped = true
+      return Promise.resolve({ done: true })
+    }
     const next = () => {
+      if (stopped) return stop()
       const res = this.read()
-      if (res !== null)
-        return Promise.resolve({ done: false, value: res })
+      if (res !== null) return Promise.resolve({ done: false, value: res })
 
-      if (this[EOF])
-        return Promise.resolve({ done: true })
+      if (this[EOF]) return stop()
 
       let resolve = null
       let reject = null
       const onerr = er => {
         this.removeListener('data', ondata)
         this.removeListener('end', onend)
+        stop()
         reject(er)
       }
       const ondata = value => {
@@ -595,6 +605,7 @@ module.exports = class Minipass extends Stream {
       const onend = () => {
         this.removeListener('error', onerr)
         this.removeListener('data', ondata)
+        stop()
         resolve({ done: true })
       }
       const ondestroy = () => onerr(new Error('stream destroyed'))
@@ -608,17 +619,43 @@ module.exports = class Minipass extends Stream {
       })
     }
 
-    return { next }
+    return {
+      next,
+      throw: stop,
+      return: stop,
+      [ASYNCITERATOR]() {
+        return this
+      },
+    }
   }
 
   // for (let chunk of stream)
-  [ITERATOR] () {
-    const next = () => {
-      const value = this.read()
-      const done = value === null
-      return { value, done }
+  [ITERATOR]() {
+    let stopped = false
+    const stop = () => {
+      this.pause()
+      this.removeListener(ERROR, stop)
+      this.removeListener('end', stop)
+      stopped = true
+      return { done: true }
     }
-    return { next }
+
+    const next = () => {
+      if (stopped) return stop()
+      const value = this.read()
+      return value === null ? stop() : { value }
+    }
+    this.once('end', stop)
+    this.once(ERROR, stop)
+
+    return {
+      next,
+      throw: stop,
+      return: stop,
+      [ITERATOR]() {
+        return this
+      },
+    }
   }
 
   destroy (er) {

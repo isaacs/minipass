@@ -4,13 +4,9 @@ const MP = require('../index.js')
 
 t.test('sync iteration', t => {
   const cases = {
-    'buffer': [ null, [
-      Buffer.from('ab'),
-      Buffer.from('cd'),
-      Buffer.from('e')
-    ]],
-    'string': [ { encoding: 'utf8' }, ['ab', 'cd', 'e']],
-    'object': [ { objectMode: true }, ['a', 'b', 'c', 'd', 'e']]
+    buffer: [null, [Buffer.from('ab'), Buffer.from('cd'), Buffer.from('e')]],
+    string: [{ encoding: 'utf8' }, ['ab', 'cd', 'e']],
+    object: [{ objectMode: true }, ['a', 'b', 'c', 'd', 'e']],
   }
   const runTest = (c, opt, expect) => {
     t.test(c, t => {
@@ -67,7 +63,7 @@ t.test('async iteration', t => {
     'foo\n',
     'foo\n',
     'foo\n',
-    'bar\n'
+    'bar\n',
   ]
 
   t.test('end immediate', async t => {
@@ -76,8 +72,7 @@ t.test('async iteration', t => {
 
     mp.write('start\n')
     const inter = setInterval(() => {
-      if (i --> 0)
-        mp.write(Buffer.from('foo\n', 'utf8'))
+      if (i-- > 0) mp.write(Buffer.from('foo\n', 'utf8'))
       else {
         mp.end('bar\n')
         clearInterval(inter)
@@ -85,8 +80,7 @@ t.test('async iteration', t => {
     })
 
     const result = []
-    for await (let x of mp)
-      result.push(x)
+    for await (let x of mp) result.push(x)
 
     t.same(result, expect)
   })
@@ -97,8 +91,7 @@ t.test('async iteration', t => {
 
     mp.write('start\n')
     const inter = setInterval(() => {
-      if (i --> 0)
-        mp.write(Buffer.from('foo\n', 'utf8'))
+      if (i-- > 0) mp.write(Buffer.from('foo\n', 'utf8'))
       else {
         mp.write('bar\n')
         setTimeout(() => mp.end())
@@ -107,8 +100,7 @@ t.test('async iteration', t => {
     })
 
     const result = []
-    for await (let x of mp)
-      result.push(x)
+    for await (let x of mp) result.push(x)
 
     t.same(result, expect)
   })
@@ -117,10 +109,8 @@ t.test('async iteration', t => {
     const mp = new MP()
     let i = 6
     const write = () => {
-      if (i === 6)
-        mp.write(Buffer.from('start\n', 'utf8'))
-      else if (i > 0)
-        mp.write('foo\n')
+      if (i === 6) mp.write(Buffer.from('start\n', 'utf8'))
+      else if (i > 0) mp.write('foo\n')
       else if (i === 0) {
         mp.end('bar\n')
         clearInterval(inter)
@@ -135,8 +125,7 @@ t.test('async iteration', t => {
     })
 
     const result = []
-    for await (let x of mp)
-      result.push(x)
+    for await (let x of mp) result.push(x)
 
     t.same(result.map(x => x.toString()).join(''), expect.join(''))
   })
@@ -145,10 +134,8 @@ t.test('async iteration', t => {
     const mp = new MP({ objectMode: true })
     let i = 6
     const write = () => {
-      if (i === 6)
-        mp.write(['start\n'])
-      else if (i > 0)
-        mp.write(['foo\n'])
+      if (i === 6) mp.write(['start\n'])
+      else if (i > 0) mp.write(['foo\n'])
       else if (i === 0) {
         mp.end(['bar\n'])
         clearInterval(inter)
@@ -163,8 +150,7 @@ t.test('async iteration', t => {
     })
 
     const result = []
-    for await (let x of mp)
-      result.push(x)
+    for await (let x of mp) result.push(x)
 
     t.same(result.map(x => x.join('')).join(''), expect.join(''))
   })
@@ -180,8 +166,7 @@ t.test('async iteration', t => {
     })
 
     const result = []
-    for await (let x of mp)
-      result.push(x)
+    for await (let x of mp) result.push(x)
 
     t.same(result.map(x => x.toString()).join(''), expect.join(''))
   })
@@ -197,8 +182,7 @@ t.test('async iteration', t => {
     })
 
     const result = []
-    for await (let x of mp)
-      result.push(x)
+    for await (let x of mp) result.push(x)
 
     t.same(result.map(x => x.join('')).join(''), expect.join(''))
   })
@@ -212,8 +196,7 @@ t.test('async iteration', t => {
     mp.end(['bar\n'])
 
     const result = []
-    for await (let x of mp)
-      result.push(x)
+    for await (let x of mp) result.push(x)
 
     t.same(result.map(x => x.join('')).join(''), expect.join(''))
   })
@@ -226,8 +209,7 @@ t.test('async iteration', t => {
     let i = 5
     inp.write('start\n')
     const inter = setInterval(() => {
-      if (i --> 0)
-        inp.write(Buffer.from('foo\n', 'utf8'))
+      if (i-- > 0) inp.write(Buffer.from('foo\n', 'utf8'))
       else {
         inp.end('bar\n')
         clearInterval(inter)
@@ -235,8 +217,7 @@ t.test('async iteration', t => {
     })
 
     const result = []
-    for await (let x of mp)
-      result.push(x)
+    for await (let x of mp) result.push(x)
 
     t.same(result, expect)
   })
@@ -249,8 +230,7 @@ t.test('async iteration', t => {
     let i = 5
     inp.write(['start\n'])
     const write = () => {
-      if (i > 0)
-        inp.write(['foo\n'])
+      if (i > 0) inp.write(['foo\n'])
       else if (i === 0) {
         inp.end(['bar\n'])
         clearInterval(inter)
@@ -265,8 +245,7 @@ t.test('async iteration', t => {
     })
 
     const result = []
-    for await (let x of mp)
-      result.push(x)
+    for await (let x of mp) result.push(x)
 
     t.same(result.map(x => x.join('')).join(''), expect.join(''))
   })
@@ -275,7 +254,9 @@ t.test('async iteration', t => {
     const mp = new MP()
     const poop = new Error('poop')
     setTimeout(() => {
-      mp.read = () => { throw poop }
+      mp.read = () => {
+        throw poop
+      }
       mp.end('this is fine')
     })
     const result = []
@@ -304,7 +285,6 @@ t.test('async iteration', t => {
 
   t.test('destroy', async t => {
     const mp = new MP()
-    const poop = new Error('poop')
     setTimeout(() => mp.destroy())
     const result = []
     const run = async () => {
@@ -317,4 +297,14 @@ t.test('async iteration', t => {
   })
 
   t.end()
+})
+
+t.test('iterators are compliant Generators', async t => {
+  const mp = new MP({ encoding: 'utf8' })
+  const it = mp[Symbol.iterator]()
+  t.equal(it[Symbol.iterator](), it, 'sync is iterable iterator')
+  const ait = mp[Symbol.asyncIterator]()
+  t.equal(ait[Symbol.asyncIterator](), ait, 'async is iterable iterator')
+  t.same(await ait.throw('yeet'), { done: true })
+  t.same(await ait.next(), { done: true }, 'stopped by throw')
 })
