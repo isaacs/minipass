@@ -6,6 +6,7 @@ const fs = require('fs')
 //   .filter(f => /\.js$/.test(f)).map(f => basename(f, '.js'))
 const impls = [
   'baseline',
+  'minipass-v3',
   'minipass-latest',
   'minipass-current',
   'minipass-current-async',
