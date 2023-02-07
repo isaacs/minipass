@@ -4,7 +4,7 @@ A _very_ minimal implementation of a [PassThrough
 stream](https://nodejs.org/api/stream.html#stream_class_stream_passthrough)
 
 [It's very
-fast](https://docs.google.com/spreadsheets/d/1oObKSrVwLX_7Ut4Z6g3fZW-AX1j1-k6w-cDsrkaSbHM/edit#gid=0)
+fast](https://docs.google.com/spreadsheets/d/1K_HR5oh3r80b8WVMWCPPjfuWXUgfkmhlX7FGI6JJ8tY/edit?usp=sharing)
 for objects, strings, and buffers.
 
 Supports `pipe()`ing (including multi-`pipe()` and backpressure transmission),
