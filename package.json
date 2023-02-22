@@ -2,8 +2,22 @@
   "name": "minipass",
   "version": "4.0.3",
   "description": "minimal implementation of a PassThrough stream",
-  "main": "index.js",
-  "types": "index.d.ts",
+  "main": "./index.js",
+  "module": "./index.mjs",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./index.d.ts",
+        "default": "./index.mjs"
+      },
+      "require": {
+        "types": "./index.d.ts",
+        "default": "./index.js"
+      }
+    },
+    "./package.json": "./package.json"
+  },
   "devDependencies": {
     "@types/node": "^17.0.41",
     "end-of-stream": "^1.4.0",
@@ -15,6 +29,10 @@
     "typescript": "^4.7.3"
   },
   "scripts": {
+    "pretest": "npm run prepare",
+    "presnap": "npm run prepare",
+    "prepare": "node ./scripts/transpile-to-esm.mjs",
+    "snap": "tap",
     "test": "tap",
     "preversion": "npm test",
     "postversion": "npm publish",
@@ -34,7 +52,8 @@
   "license": "ISC",
   "files": [
     "index.d.ts",
-    "index.js"
+    "index.js",
+    "index.mjs"
   ],
   "tap": {
     "check-coverage": true

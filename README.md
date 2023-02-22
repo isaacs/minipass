@@ -86,7 +86,11 @@ mechanisms.
 Example:
 
 ```js
+// hybrid module, either works
+import Minipass from 'minipass'
+// or:
 const Minipass = require('minipass')
+
 const stream = new Minipass()
 stream.on('data', () => console.log('data event'))
 console.log('before write')
@@ -106,7 +110,11 @@ async mode either by setting `async: true` in the constructor
 options, or by setting `stream.async = true` later on.
 
 ```js
+// hybrid module, either works
+import Minipass from 'minipass'
+// or:
 const Minipass = require('minipass')
+
 const asyncStream = new Minipass({ async: true })
 asyncStream.on('data', () => console.log('data event'))
 console.log('before write')
@@ -122,7 +130,7 @@ Switching _out_ of async mode is unsafe, as it could cause data
 corruption, and so is not enabled. Example:
 
 ```js
-const Minipass = require('minipass')
+import Minipass from 'minipass'
 const stream = new Minipass({ encoding: 'utf8' })
 stream.on('data', chunk => console.log(chunk))
 stream.async = true
@@ -365,7 +373,7 @@ It's a stream! Use it like a stream and it'll most likely do what you
 want.
 
 ```js
-const Minipass = require('minipass')
+import Minipass from 'minipass'
 const mp = new Minipass(options) // optional: { encoding, objectMode }
 mp.write('foo')
 mp.pipe(someOtherStream)

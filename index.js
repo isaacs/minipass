@@ -8,7 +8,8 @@ const proc =
       }
 const EE = require('events')
 const Stream = require('stream')
-const SD = require('string_decoder').StringDecoder
+const stringdecoder = require('string_decoder')
+const SD = stringdecoder.StringDecoder
 
 const EOF = Symbol('EOF')
 const MAYBE_EMIT_END = Symbol('maybeEmitEnd')
@@ -93,7 +94,7 @@ class PipeProxyErrors extends Pipe {
   }
 }
 
-module.exports = class Minipass extends Stream {
+class Minipass extends Stream {
   constructor(options) {
     super()
     this[FLOWING] = false
@@ -659,8 +660,12 @@ module.exports = class Minipass extends Stream {
       (s instanceof Minipass ||
         s instanceof Stream ||
         (s instanceof EE &&
-          (typeof s.pipe === 'function' || // readable
-            (typeof s.write === 'function' && typeof s.end === 'function')))) // writable
+          // readable
+          (typeof s.pipe === 'function' ||
+            // writable
+            (typeof s.write === 'function' && typeof s.end === 'function'))))
     )
   }
 }
+
+module.exports = Minipass
