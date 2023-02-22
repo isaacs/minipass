@@ -465,3 +465,16 @@ t.test('end:false', async t => {
   mp.pipe(d, { end: false })
   mp.end('this is fine')
 })
+
+t.test('objectMode allows falsey values for data', async t => {
+  const mp = new MiniPass({ objectMode: true })
+  const data = mp.collect()
+  mp.write('')
+  mp.write(null)
+  mp.write(undefined)
+  mp.write(0)
+  mp.write(NaN)
+  mp.write([])
+  mp.end()
+  t.matchSnapshot(await data)
+})

@@ -487,7 +487,7 @@ class Minipass extends Stream {
     if (ev !== 'error' && ev !== 'close' && ev !== DESTROYED && this[DESTROYED])
       return
     else if (ev === 'data') {
-      return !data
+      return !this[OBJECTMODE] && !data
         ? false
         : this[ASYNC]
         ? defer(() => this[EMITDATA](data))
