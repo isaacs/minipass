@@ -392,6 +392,8 @@ mp.end('bar')
   emission until next tick. This reduces performance slightly,
   but makes Minipass streams use timing behavior closer to Node
   core streams. See [Timing](#timing) for more details.
+- `signal` An `AbortSignal` that will cause the stream to unhook
+  itself from everything and become as inert as possible.
 
 ### API
 
@@ -464,16 +466,14 @@ streams.
 - `writable` Whether the stream is writable. Default `true`. Set to
   `false` when `end()`
 - `readable` Whether the stream is readable. Default `true`.
-- `buffer` A [yallist](http://npm.im/yallist) linked list of chunks written
-  to the stream that have not yet been emitted. (It's probably a bad idea
-  to mess with this.)
-- `pipes` A [yallist](http://npm.im/yallist) linked list of streams that
-  this stream is piping into. (It's probably a bad idea to mess with
-  this.)
+- `pipes` An array of Pipe objects referencing streams that this
+  stream is piping into.
 - `destroyed` A getter that indicates whether the stream was destroyed.
 - `paused` True if the stream has been explicitly paused, otherwise false.
 - `objectMode` Indicates whether the stream is in `objectMode`. Once set
   to `true`, it cannot be set to `false`.
+- `aborted` Readonly property set when the `AbortSignal`
+  dispatches an `abort` event.
 
 ### Events
 
