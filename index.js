@@ -392,21 +392,20 @@ class Minipass extends Stream {
   }
 
   [BUFFERSHIFT]() {
-    if (this[BUFFER].length) {
-      if (this[OBJECTMODE]) this[BUFFERLENGTH] -= 1
-      else this[BUFFERLENGTH] -= this[BUFFER][0].length
-    }
+    if (this[OBJECTMODE]) this[BUFFERLENGTH] -= 1
+    else this[BUFFERLENGTH] -= this[BUFFER][0].length
     return this[BUFFER].shift()
   }
 
   [FLUSH](noDrain) {
-    do {} while (this[FLUSHCHUNK](this[BUFFERSHIFT]()))
+    do {} while (this[FLUSHCHUNK](this[BUFFERSHIFT]()) && this[BUFFER].length)
 
     if (!noDrain && !this[BUFFER].length && !this[EOF]) this.emit('drain')
   }
 
   [FLUSHCHUNK](chunk) {
-    return chunk ? (this.emit('data', chunk), this.flowing) : false
+    this.emit('data', chunk)
+    return this.flowing
   }
 
   pipe(dest, opts) {
