@@ -100,11 +100,6 @@ class PipeProxyErrors extends Pipe {
 class Minipass extends Stream {
   constructor(options) {
     super()
-    this[SIGNAL] = options && options.signal
-    if (this[SIGNAL]) {
-      this[SIGNAL].addEventListener('abort', () => this[ABORT]())
-    }
-    this[ABORTED] = false
     this[FLOWING] = false
     // whether we're explicitly paused
     this[PAUSED] = false
@@ -130,6 +125,14 @@ class Minipass extends Stream {
     }
     if (options && options.debugExposePipes === true) {
       Object.defineProperty(this, 'pipes', { get: () => this[PIPES] })
+    }
+    this[SIGNAL] = options && options.signal
+    this[ABORTED] = false
+    if (this[SIGNAL]) {
+      this[SIGNAL].addEventListener('abort', () => this[ABORT]())
+      if (this[SIGNAL].aborted) {
+        this[ABORT]()
+      }
     }
   }
 

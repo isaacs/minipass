@@ -44,3 +44,15 @@ t.test('having a signal means errors are nonfatal', t => {
   m.emit('error', new Error('this is fine'))
   t.end()
 })
+
+t.test('pre-aborted stream', t => {
+  const ac = new AbortController()
+  ac.abort(new Error('operation aborted before it began'))
+  const m = new MM({ signal: ac.signal })
+  t.equal(m.aborted, true)
+  m.on('data', () => t.fail('should not get any data'))
+  t.equal(m.write('no op writing'), false)
+  m.end()
+  t.equal(m.write('even write after end is no op'), false)
+  t.end()
+})
