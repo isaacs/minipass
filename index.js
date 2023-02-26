@@ -190,6 +190,7 @@ class Minipass extends Stream {
   set aborted(_) {}
 
   write(chunk, encoding, cb) {
+    if (this[ABORTED]) return false
     if (this[EOF]) throw new Error('write after end')
 
     if (this[DESTROYED]) {

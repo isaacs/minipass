@@ -21,7 +21,7 @@ m.pipe(d)
 ac.abort(er)
 t.equal(sawAbort, true)
 t.equal(m.read(), null)
-m.write(' world')
+t.equal(m.write(' world'), false)
 t.equal(m.read(), null)
 t.equal(m.aborted, true)
 m.aborted = 123
