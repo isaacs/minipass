@@ -37,3 +37,10 @@ t.test('aborting rejects .promise() and friends', async t => {
   ac.abort(new Error('abort'))
   await testp
 })
+
+t.test('having a signal means errors are nonfatal', t => {
+  const ac = new AbortController()
+  const m = new MM({ encoding: 'utf8', signal: ac.signal })
+  m.emit('error', new Error('this is fine'))
+  t.end()
+})

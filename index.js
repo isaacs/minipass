@@ -180,37 +180,8 @@ class Minipass extends Stream {
   // drop everything and get out of the flow completely
   [ABORT]() {
     this[ABORTED] = true
-    const signal = this[SIGNAL]
-    /* istanbul ignore next */
-    if (this.write) this.write = () => {}
-    /* istanbul ignore next */
-    if (this.end) this.end = () => {}
-    /* istanbul ignore next */
-    if (this.pipe) this.pipe = () => {}
-    /* istanbul ignore next */
-    this.on = this.addListener = () => {}
-    /* istanbul ignore next */
-    this.off = this.removeListener = () => {}
-    /* istanbul ignore next */
-    this[ABORT] = () => {}
-    /* istanbul ignore next */
-    this.emit = () => {}
-    for (const p of this[PIPES]) {
-      p.unpipe()
-    }
-    super.removeAllListeners('data')
-    super.removeAllListeners('end')
-    super.removeAllListeners('drain')
-    super.removeAllListeners('resume')
-    this[BUFFER].length = 0
-    this.readable = false
-    this.writable = false
-    super.emit(ABORT, signal.reason)
-    super.emit('abort', signal.reason)
-    super.emit('end')
-    super.emit('prefinish')
-    super.emit('finish')
-    super.emit('close')
+    this.emit('abort', this[SIGNAL].reason)
+    this.destroy(this[SIGNAL].reason)
   }
 
   get aborted() {
@@ -503,7 +474,10 @@ class Minipass extends Stream {
     } else if (ev === 'error') {
       this[EMITTED_ERROR] = data
       super.emit(ERROR, data)
-      const ret = super.emit('error', data)
+      const ret =
+        !this[SIGNAL] || this.listeners('error').length
+          ? super.emit('error', data)
+          : false
       this[MAYBE_EMIT_END]()
       return ret
     } else if (ev === 'resume') {
@@ -591,7 +565,6 @@ class Minipass extends Stream {
     return new Promise((resolve, reject) => {
       this.on(DESTROYED, () => reject(new Error('stream destroyed')))
       this.on('error', er => reject(er))
-      this.on(ABORT, er => reject(er))
       this.on('end', () => resolve())
     })
   }
@@ -621,14 +594,12 @@ class Minipass extends Stream {
       }
       const ondata = value => {
         this.removeListener('error', onerr)
-        this.removeListener(ABORT, onerr)
         this.removeListener('end', onend)
         this.pause()
         resolve({ value: value, done: !!this[EOF] })
       }
       const onend = () => {
         this.removeListener('error', onerr)
-        this.removeListener(ABORT, onerr)
         this.removeListener('data', ondata)
         stop()
         resolve({ done: true })
@@ -639,7 +610,6 @@ class Minipass extends Stream {
         resolve = res
         this.once(DESTROYED, ondestroy)
         this.once('error', onerr)
-        this.once(ABORT, onerr)
         this.once('end', onend)
         this.once('data', ondata)
       })
@@ -661,7 +631,6 @@ class Minipass extends Stream {
     const stop = () => {
       this.pause()
       this.removeListener(ERROR, stop)
-      this.removeListener(ABORT, stop)
       this.removeListener('end', stop)
       stopped = true
       return { done: true }
@@ -674,7 +643,6 @@ class Minipass extends Stream {
     }
     this.once('end', stop)
     this.once(ERROR, stop)
-    this.once(ABORT, stop)
 
     return {
       next,

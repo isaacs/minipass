@@ -393,7 +393,10 @@ mp.end('bar')
   but makes Minipass streams use timing behavior closer to Node
   core streams. See [Timing](#timing) for more details.
 - `signal` An `AbortSignal` that will cause the stream to unhook
-  itself from everything and become as inert as possible.
+  itself from everything and become as inert as possible.  Note
+  that providing a `signal` parameter will make `'error'` events
+  no longer throw if they are unhandled, but they will still be
+  emitted to handlers if any are attached.
 
 ### API
 
