@@ -57,6 +57,16 @@ declare namespace Minipass {
     : ObjectModeOptions
 }
 
+interface Minipass<
+  RType extends any = Buffer,
+  WType extends any = RType extends Minipass.BufferOrString
+    ? Minipass.ContiguousData
+    : RType
+  >
+{
+  default: typeof Minipass;
+}
+
 declare class Minipass<
     RType extends any = Buffer,
     WType extends any = RType extends Minipass.BufferOrString
