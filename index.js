@@ -699,5 +699,5 @@ class Minipass extends Stream {
   }
 }
 
-Minipass.default = Minipass;
+Minipass.default = Minipass
 module.exports = Minipass
