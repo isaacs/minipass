@@ -52,6 +52,7 @@
   "author": "Isaac Z. Schlueter <i@izs.me> (http://blog.izs.me/)",
   "license": "ISC",
   "files": [
+    "index.d.mts",
     "index.d.ts",
     "index.js",
     "index.mjs"
