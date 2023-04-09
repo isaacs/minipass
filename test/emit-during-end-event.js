@@ -1,4 +1,4 @@
-const Minipass = require('../')
+const { Minipass } = require('../')
 const t = require('tap')
 
 class FancyEnder extends Minipass {

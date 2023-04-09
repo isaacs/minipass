@@ -1,6 +1,6 @@
 'use strict'
 const t = require('tap')
-const MP = require('../index.js')
+const { Minipass: MP } = require('../index.js')
 
 t.test('basic', async t => {
   const mp = new MP()

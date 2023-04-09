@@ -1,5 +1,5 @@
 // https://github.com/isaacs/minipass/issues/36
-const Minipass = require('../')
+const { Minipass } = require('../')
 const t = require('tap')
 
 const m = new Minipass({ encoding: 'utf8' })

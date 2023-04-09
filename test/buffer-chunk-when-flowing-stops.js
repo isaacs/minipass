@@ -5,7 +5,7 @@
 //
 // This caused issues when piping make-fetch-happen stream to tar.extract
 // https://github.com/npm/cli/issues/3884
-const Minipass = require('../')
+const { Minipass } = require('../')
 const t = require('tap')
 
 class Pauser extends Minipass {

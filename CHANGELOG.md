@@ -1,5 +1,9 @@
 # chernge lerg
 
+## 5.0
+
+- No default export, only a named export
+
 ## 4.2
 
 - add AbortSignal support

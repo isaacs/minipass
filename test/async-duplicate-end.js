@@ -1,4 +1,4 @@
-const Minipass = require('../')
+const { Minipass } = require('../')
 const t = require('tap')
 
 t.test('async pipes should only end one time', t => {

@@ -1,5 +1,5 @@
 const t = require('tap')
-const Minipass = require('../')
+const { Minipass } = require('../')
 
 t.test('not proxied', t => {
   const src = new Minipass()

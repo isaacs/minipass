@@ -1,6 +1,6 @@
 'use strict'
 const t = require('tap')
-const MP = require('../')
+const { Minipass: MP } = require('../')
 
 t.test('end is not missed if listened to after end', t => {
   t.plan(1)

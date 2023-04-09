@@ -1,4 +1,4 @@
-const MM = require('../')
+const { Minipass: MM } = require('../')
 const t = require('tap')
 if (typeof AbortSignal === 'undefined') {
   Object.assign(global, require('node-abort-controller'))

@@ -1,4 +1,4 @@
-const MP = require('../')
+const { Minipass: MP } = require('../')
 const EE = require('events')
 const t = require('tap')
 const Stream = require('stream')

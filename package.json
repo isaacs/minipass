@@ -8,7 +8,7 @@
   "exports": {
     ".": {
       "import": {
-        "types": "./index.d.mts",
+        "types": "./index.d.ts",
         "default": "./index.mjs"
       },
       "require": {
@@ -52,7 +52,6 @@
   "author": "Isaac Z. Schlueter <i@izs.me> (http://blog.izs.me/)",
   "license": "ISC",
   "files": [
-    "index.d.mts",
     "index.d.ts",
     "index.js",
     "index.mjs"

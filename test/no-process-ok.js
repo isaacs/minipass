@@ -1,7 +1,7 @@
 const tap = require('tap')
 const proc = global.process
 global.process = null
-const MP = require('../')
+const { Minipass: MP } = require('../')
 const src = new MP()
 const dest = new MP({ encoding: 'utf8' })
 src.pipe(dest)

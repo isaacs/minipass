@@ -1,5 +1,5 @@
 const t = require('tap')
-const MP = require('../')
+const { Minipass: MP } = require('../')
 t.test('do not auto-end empty stream if explicitly paused', t => {
   const mp = new MP()
   let waitedForEnd = false

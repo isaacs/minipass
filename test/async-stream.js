@@ -1,5 +1,5 @@
 const t = require('tap')
-const MP = require('../')
+const { Minipass: MP } = require('../')
 
 t.test('pipe', t => {
   const m = new MP({ encoding: 'utf8', async: true })

@@ -2,7 +2,7 @@
 // true, because even though s is not flowing at the START of the write(),
 // it IS flowing by the END of the write call.
 
-const Minipass = require('../')
+const { Minipass } = require('../')
 const t = require('tap')
 
 t.test('empty write', async t => {

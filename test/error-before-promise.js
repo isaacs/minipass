@@ -1,4 +1,4 @@
-const MP = require('../')
+const { Minipass: MP } = require('../')
 const t = require('tap')
 
 t.test('emit an error before calling stream.promise()', t => {

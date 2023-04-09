@@ -1,4 +1,4 @@
-const MP = require('../')
+const { Minipass: MP } = require('../')
 const t = require('tap')
 
 t.match(new MP(), { destroy: Function }, 'destroy is implemented')

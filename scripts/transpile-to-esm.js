@@ -4,7 +4,8 @@ const { readFileSync, writeFileSync } = require('fs')
 const { resolve } = require('path')
 const cjs = readFileSync(resolve(__dirname, '../index.js'), 'utf8')
 const esm = cjs
-  .replace(/module.exports\s*=\s*/, 'export default ')
+  .replace(/exports\.Minipass\s*=[^\n]*/, '')
+  .replace(/class Minipass /, 'export class Minipass ')
   .replace(
     /const ([a-zA-Z0-9]+)\s*=\s*require\('([^']+)'\)/g,
     `import $1 from '$2'`

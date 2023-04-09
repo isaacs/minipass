@@ -1,6 +1,6 @@
 'use strict'
 const t = require('tap')
-const MP = require('../')
+const { Minipass: MP } = require('../')
 
 t.test('organic', t => {
   const butterfly = Buffer.from([0x61, 0xf0, 0x9f, 0xa6, 0x8b, 0xf0])

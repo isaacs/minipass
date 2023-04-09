@@ -6,7 +6,7 @@
 // the Pipeline's buffer is holding a chunk, but the Pipeline itself is in
 // flowing mode.  The solution is to always drain the buffer before emitting
 // 'data', if there is other data waiting to be emitted.
-const Minipass = require('../')
+const { Minipass } = require('../')
 const t = require('tap')
 
 const src = new Minipass({ encoding: 'utf8' })

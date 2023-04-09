@@ -1,5 +1,5 @@
 const t = require('tap')
-const MP = require('../')
+const { Minipass: MP } = require('../')
 
 // make warnings throw
 Object.defineProperty(process, 'emitWarning', {

@@ -1,4 +1,4 @@
-import Minipass from '../index.mjs'
+import { Minipass } from '../index.mjs'
 import t from 'tap'
 
 t.test(`just make sure it's actually a stream`, async t => {

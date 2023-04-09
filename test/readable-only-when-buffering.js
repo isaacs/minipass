@@ -1,4 +1,4 @@
-const MP = require('../')
+const { Minipass: MP } = require('../')
 const t = require('tap')
 const mp = new MP()
 let readables = 0

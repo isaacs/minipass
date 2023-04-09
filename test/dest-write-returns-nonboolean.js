@@ -1,5 +1,5 @@
 const t = require('tap')
-const MP = require('../')
+const { Minipass: MP } = require('../')
 
 t.test('writing to a non-bool returning write() does not pause', t => {
   const booleyStream = new (class extends MP {

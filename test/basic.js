@@ -1,9 +1,9 @@
-const MiniPass = require('../')
+const { Minipass } = require('../')
 const t = require('tap')
 const EE = require('events').EventEmitter
 
 t.test('some basic piping and writing', async t => {
-  let mp = new MiniPass({ encoding: 'base64', debugExposeBuffer: true })
+  let mp = new Minipass({ encoding: 'base64', debugExposeBuffer: true })
   t.notOk(mp.flowing)
   mp.flowing = true
   t.notOk(mp.flowing)
@@ -13,7 +13,7 @@ t.test('some basic piping and writing', async t => {
   t.equal(mp.readable, true)
   t.equal(mp.writable, true)
   t.equal(mp.write('hello'), false)
-  let dest = new MiniPass({ debugExposeBuffer: true })
+  let dest = new Minipass({ debugExposeBuffer: true })
   let sawDestData = false
   dest.once('data', chunk => {
     sawDestData = true
@@ -34,7 +34,7 @@ t.test('some basic piping and writing', async t => {
 
 t.test('unicode splitting', async t => {
   const butterfly = '🦋'
-  const mp = new MiniPass({ encoding: 'utf8' })
+  const mp = new Minipass({ encoding: 'utf8' })
   t.plan(2)
   t.equal(mp.encoding, 'utf8')
   mp.on('data', chunk => {
@@ -50,7 +50,7 @@ t.test('unicode splitting', async t => {
 
 t.test('unicode splitting with setEncoding', async t => {
   const butterfly = '🦋'
-  const mp = new MiniPass({ encoding: 'hex' })
+  const mp = new Minipass({ encoding: 'hex' })
   t.plan(4)
   t.equal(mp.encoding, 'hex')
   mp.setEncoding('hex')
@@ -71,8 +71,8 @@ t.test('unicode splitting with setEncoding', async t => {
 t.test('base64 -> utf8 piping', t => {
   t.plan(1)
   const butterfly = '🦋'
-  const mp = new MiniPass({ encoding: 'base64' })
-  const dest = new MiniPass({ encoding: 'utf8' })
+  const mp = new Minipass({ encoding: 'base64' })
+  const dest = new Minipass({ encoding: 'utf8' })
   mp.pipe(dest)
   let out = ''
   dest.on('data', c => (out += c))
@@ -86,8 +86,8 @@ t.test('base64 -> utf8 piping', t => {
 t.test('utf8 -> base64 piping', t => {
   t.plan(1)
   const butterfly = '🦋'
-  const mp = new MiniPass({ encoding: 'utf8' })
-  const dest = new MiniPass({ encoding: 'base64' })
+  const mp = new Minipass({ encoding: 'utf8' })
+  const dest = new Minipass({ encoding: 'base64' })
   mp.pipe(dest)
   let out = ''
   dest.on('data', c => (out += c))
@@ -100,7 +100,7 @@ t.test('utf8 -> base64 piping', t => {
 
 t.test('read method', async t => {
   const butterfly = '🦋'
-  const mp = new MiniPass({ encoding: 'utf8' })
+  const mp = new Minipass({ encoding: 'utf8' })
   mp.on('data', c => t.equal(c, butterfly))
   mp.pause()
   t.equal(mp.paused, true, 'paused=true')
@@ -113,7 +113,7 @@ t.test('read method', async t => {
 t.test('read with no args', async t => {
   t.test('buffer -> string', async t => {
     const butterfly = '🦋'
-    const mp = new MiniPass({ encoding: 'utf8' })
+    const mp = new Minipass({ encoding: 'utf8' })
     mp.on('data', c => t.equal(c, butterfly))
     mp.pause()
     const butterbuf = Buffer.from(butterfly)
@@ -125,7 +125,7 @@ t.test('read with no args', async t => {
 
   t.test('buffer -> buffer', async t => {
     const butterfly = Buffer.from('🦋')
-    const mp = new MiniPass()
+    const mp = new Minipass()
     mp.on('data', c => t.same(c, butterfly))
     mp.pause()
     mp.write(butterfly.slice(0, 2))
@@ -137,7 +137,7 @@ t.test('read with no args', async t => {
   t.test('string -> buffer', async t => {
     const butterfly = '🦋'
     const butterbuf = Buffer.from(butterfly)
-    const mp = new MiniPass()
+    const mp = new Minipass()
     mp.on('data', c => t.same(c, butterbuf))
     mp.pause()
     mp.write(butterfly)
@@ -147,7 +147,7 @@ t.test('read with no args', async t => {
 
   t.test('string -> string', async t => {
     const butterfly = '🦋'
-    const mp = new MiniPass({ encoding: 'utf8' })
+    const mp = new Minipass({ encoding: 'utf8' })
     mp.on('data', c => t.equal(c, butterfly))
     mp.pause()
     mp.write(butterfly[0])
@@ -159,7 +159,7 @@ t.test('read with no args', async t => {
 
 t.test('partial read', async t => {
   const butterfly = '🦋'
-  const mp = new MiniPass()
+  const mp = new Minipass()
   const butterbuf = Buffer.from(butterfly)
   mp.write(butterbuf.slice(0, 1))
   mp.write(butterbuf.slice(1, 2))
@@ -172,7 +172,7 @@ t.test('partial read', async t => {
 })
 
 t.test('write after end', async t => {
-  const mp = new MiniPass()
+  const mp = new Minipass()
   let sawEnd = false
   mp.on('end', _ => (sawEnd = true))
   mp.end('not empty')
@@ -184,7 +184,7 @@ t.test('write after end', async t => {
 })
 
 t.test('write after end', async t => {
-  const mp = new MiniPass()
+  const mp = new Minipass()
   let sawEnd = 0
   mp.on('end', _ => sawEnd++)
   mp.end() // empty
@@ -196,7 +196,7 @@ t.test('write after end', async t => {
 })
 
 t.test('write cb', async t => {
-  const mp = new MiniPass()
+  const mp = new Minipass()
   let calledCb = false
   mp.write('ok', () => (calledCb = true))
   t.ok(calledCb)
@@ -204,7 +204,7 @@ t.test('write cb', async t => {
 
 t.test('end with chunk', async t => {
   let out = ''
-  const mp = new MiniPass({ encoding: 'utf8' })
+  const mp = new Minipass({ encoding: 'utf8' })
   let sawEnd = false
   mp.prependListener('end', _ => (sawEnd = true))
   mp.addListener('data', c => (out += c))
@@ -216,8 +216,8 @@ t.test('end with chunk', async t => {
 })
 
 t.test('no drain if could not entirely drain on resume', async t => {
-  const mp = new MiniPass()
-  const dest = new MiniPass({ encoding: 'buffer' })
+  const mp = new Minipass()
+  const dest = new Minipass({ encoding: 'buffer' })
   t.equal(mp.write('foo'), false)
   t.equal(mp.write('bar'), false)
   t.equal(mp.write('baz'), false)
@@ -227,7 +227,7 @@ t.test('no drain if could not entirely drain on resume', async t => {
 })
 
 t.test('end with chunk pending', async t => {
-  const mp = new MiniPass()
+  const mp = new Minipass()
   t.equal(mp.write('foo'), false)
   t.equal(mp.write('626172', 'hex'), false)
   t.equal(mp.write('baz'), false)
@@ -253,7 +253,7 @@ t.test('pipe to stderr does not throw', t => {
   fs.writeFileSync(
     file,
     `
-    const MP = require(${module})
+    const { Minipass: MP } = require(${module})
     const mp = new MP()
     mp.pipe(process.stderr)
     mp.end("hello")
@@ -274,7 +274,7 @@ t.test('pipe to stderr does not throw', t => {
 })
 
 t.test('emit works with many args', t => {
-  const mp = new MiniPass()
+  const mp = new Minipass()
   t.plan(2)
   mp.on('foo', function (a, b, c, d, e, f, g) {
     t.same([a, b, c, d, e, f, g], [1, 2, 3, 4, 5, 6, 7])
@@ -284,7 +284,7 @@ t.test('emit works with many args', t => {
 })
 
 t.test('emit drain on resume, even if no flush', t => {
-  const mp = new MiniPass({ debugExposeBuffer: true })
+  const mp = new Minipass({ debugExposeBuffer: true })
   mp.encoding = 'utf8'
 
   const chunks = []
@@ -314,7 +314,7 @@ t.test('emit drain on resume, even if no flush', t => {
 })
 
 t.test('save close for end', t => {
-  const mp = new MiniPass()
+  const mp = new Minipass()
   let ended = false
   mp.on('close', _ => {
     t.equal(ended, true, 'end before close')
@@ -333,7 +333,7 @@ t.test('save close for end', t => {
 
 t.test('eos works', t => {
   const eos = require('end-of-stream')
-  const mp = new MiniPass()
+  const mp = new Minipass()
 
   eos(mp, er => {
     if (er) throw er
@@ -347,7 +347,7 @@ t.test('eos works', t => {
 
 t.test('bufferLength property', t => {
   const eos = require('end-of-stream')
-  const mp = new MiniPass()
+  const mp = new Minipass()
   mp.write('a')
   mp.write('a')
   mp.write('a')
@@ -365,7 +365,7 @@ t.test('bufferLength property', t => {
 })
 
 t.test('emit resume event on resume', t => {
-  const mp = new MiniPass()
+  const mp = new Minipass()
   t.plan(3)
   mp.on('resume', _ => t.pass('got resume event'))
   mp.end('asdf')
@@ -375,7 +375,7 @@ t.test('emit resume event on resume', t => {
 })
 
 t.test('objectMode', t => {
-  const mp = new MiniPass({ objectMode: true })
+  const mp = new Minipass({ objectMode: true })
   t.equal(mp.objectMode, true, 'objectMode getter returns value')
   mp.objectMode = false
   t.equal(mp.objectMode, true, 'objectMode getter is read-only')
@@ -398,7 +398,7 @@ t.test('objectMode', t => {
 })
 
 t.test('objectMode no encoding', t => {
-  const mp = new MiniPass({
+  const mp = new Minipass({
     objectMode: true,
     encoding: 'utf8',
   })
@@ -420,7 +420,7 @@ t.test('objectMode no encoding', t => {
 })
 
 t.test('objectMode read() and buffering', t => {
-  const mp = new MiniPass({ objectMode: true })
+  const mp = new Minipass({ objectMode: true })
   const a = { a: 1 }
   const b = { b: 1 }
   t.notOk(mp.write(a))
@@ -432,21 +432,21 @@ t.test('objectMode read() and buffering', t => {
 
 t.test('set encoding in object mode throws', async t =>
   t.throws(
-    _ => (new MiniPass({ objectMode: true }).encoding = 'utf8'),
+    _ => (new Minipass({ objectMode: true }).encoding = 'utf8'),
     new Error('cannot set encoding in objectMode')
   )
 )
 
 t.test('set encoding again throws', async t =>
   t.throws(_ => {
-    const mp = new MiniPass({ encoding: 'hex' })
+    const mp = new Minipass({ encoding: 'hex' })
     mp.write('ok')
     mp.encoding = 'utf8'
   }, new Error('cannot change encoding'))
 )
 
 t.test('set encoding with existing buffer', async t => {
-  const mp = new MiniPass()
+  const mp = new Minipass()
   const butterfly = '🦋'
   const butterbuf = Buffer.from(butterfly)
   mp.write(butterbuf.slice(0, 1))
@@ -458,8 +458,8 @@ t.test('set encoding with existing buffer', async t => {
 
 t.test('end:false', async t => {
   t.plan(1)
-  const mp = new MiniPass({ encoding: 'utf8' })
-  const d = new MiniPass({ encoding: 'utf8' })
+  const mp = new Minipass({ encoding: 'utf8' })
+  const d = new Minipass({ encoding: 'utf8' })
   d.end = () => t.threw(new Error('no end no exit no way out'))
   d.on('data', c => t.equal(c, 'this is fine'))
   mp.pipe(d, { end: false })
@@ -467,7 +467,7 @@ t.test('end:false', async t => {
 })
 
 t.test('objectMode allows falsey values for data', t => {
-  const mp = new MiniPass({ objectMode: true })
+  const mp = new Minipass({ objectMode: true })
   mp.write('')
   mp.write(null)
   mp.write(undefined)

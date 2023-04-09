@@ -10,7 +10,7 @@ const stringToArrayBuffer = s => {
   return ab
 }
 
-const MP = require('../')
+const { Minipass: MP } = require('../')
 
 const e = { encoding: 'utf8' }
 t.test('write array buffer', t => {

@@ -1,4 +1,4 @@
-const MP = require('../')
+const { Minipass: MP } = require('../')
 const mp = new MP()
 const poop = new Error('poop')
 mp.on('end', () => mp.emit('error', poop))
