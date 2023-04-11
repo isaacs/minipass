@@ -147,5 +147,4 @@ declare class Minipass<
   [Symbol.asyncIterator](): AsyncGenerator<RType, void, void>
 }
 
-export default Minipass;
-export = Minipass;
+export = Minipass
