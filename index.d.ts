@@ -141,18 +141,22 @@ export class Minipass<
     ev: Event,
     handler: (...args: Events[Event]) => any
   ): this
+  on(ev: string | symbol, handler: Function): this
 
   once<Event extends keyof Events>(
     ev: Event,
     handler: (...args: Events[Event]) => any
   ): this
+  once(ev: string | symbol, handler: Function): this
 
   addListener<Event extends keyof Events>(
     ev: Event,
     handler: (...args: Events[Event]) => any
   ): this
+  addListener(ev: string | symbol, handler: Function): this
 
   emit<Event extends keyof Events>(ev: Event, ...data: Events[Event]): boolean
+  emit(ev: string | symbol, ...data: any): boolean
 
   write(chunk: WType, cb?: () => void): boolean
   write(chunk: WType, encoding?: Minipass.Encoding, cb?: () => void): boolean
