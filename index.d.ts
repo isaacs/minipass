@@ -9,16 +9,24 @@ import { Stream } from 'stream'
 export namespace Minipass {
   export type Encoding = BufferEncoding | 'buffer' | null
 
-  export interface Writable extends EventEmitter {
-    end(): any
-    write(chunk: any, ...args: any[]): any
-  }
+  export type Writable =
+    | Minipass<any, any, any>
+    | NodeJS.WriteStream
+    | (NodeJS.WriteStream & { fd: number })
+    | (EventEmitter & {
+        end(): any
+        write(chunk: any, ...args: any[]): any
+      })
 
-  export interface Readable extends EventEmitter {
-    pause(): any
-    resume(): any
-    pipe(): any
-  }
+  export type Readable =
+    | Minipass<any, any, any>
+    | NodeJS.ReadStream
+    | (NodeJS.ReadStream & { fd: number })
+    | (EventEmitter & {
+        pause(): any
+        resume(): any
+        pipe(...destArgs: any[]): any
+      })
 
   export type DualIterable<T> = Iterable<T> & AsyncIterable<T>
 
