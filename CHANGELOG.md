@@ -1,5 +1,11 @@
 # chernge lerg
 
+## 6.0
+
+- Define event argument types in an extensible manner, defaulting
+  to `unknown[]` for event argument signatures if not declared.
+- Drop support for old node versions
+
 ## 5.0
 
 - No default export, only a named export
