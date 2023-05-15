@@ -59,13 +59,39 @@ export namespace Minipass {
     : T extends Buffer
     ? BufferOptions
     : ObjectModeOptions
+
+  interface EventArguments {
+    [k: string]: unknown[]
+  }
+  /**
+   * The listing of events that a Minipass class can emit.
+   * Extend this when extending the Minipass class, and pass as
+   * the third template argument.  The key is the name of the event,
+   * and the value is the argument list.
+   *
+   * Any undeclared events will still be allowed, but the handler will get
+   * arguments as "unknown".
+   */
+  export interface Events<RType extends any = Buffer> extends EventArguments {
+    readable: []
+    data: [chunk: RType]
+    error: [er: unknown]
+    abort: [reason: unknown]
+    drain: []
+    resume: []
+    end: []
+    finish: []
+    prefinish: []
+    close: []
+  }
 }
 
 export class Minipass<
     RType extends any = Buffer,
     WType extends any = RType extends Minipass.BufferOrString
       ? Minipass.ContiguousData
-      : RType
+      : RType,
+    Events extends Minipass.Events<RType> = Minipass.Events<RType>
   >
   extends Stream
   implements Minipass.DualIterable<RType>
@@ -111,6 +137,23 @@ export class Minipass<
       : [Minipass.Options<RType>]
   )
 
+  on<Event extends keyof Events>(
+    ev: Event,
+    handler: (...args: Events[Event]) => any
+  ): this
+
+  once<Event extends keyof Events>(
+    ev: Event,
+    handler: (...args: Events[Event]) => any
+  ): this
+
+  addListener<Event extends keyof Events>(
+    ev: Event,
+    handler: (...args: Events[Event]) => any
+  ): this
+
+  emit<Event extends keyof Events>(ev: Event, ...data: Events[Event]): boolean
+
   write(chunk: WType, cb?: () => void): boolean
   write(chunk: WType, encoding?: Minipass.Encoding, cb?: () => void): boolean
   read(size?: number): RType
@@ -126,26 +169,6 @@ export class Minipass<
   destroy(er?: any): void
   pipe<W extends Minipass.Writable>(dest: W, opts?: Minipass.PipeOptions): W
   unpipe<W extends Minipass.Writable>(dest: W): void
-
-  /**
-   * alias for on()
-   */
-  addEventHandler(event: string, listener: (...args: any[]) => any): this
-
-  on(event: string, listener: (...args: any[]) => any): this
-  on(event: 'data', listener: (chunk: RType) => any): this
-  on(event: 'error', listener: (error: any) => any): this
-  on(
-    event:
-      | 'readable'
-      | 'drain'
-      | 'resume'
-      | 'end'
-      | 'prefinish'
-      | 'finish'
-      | 'close',
-    listener: () => any
-  ): this
 
   [Symbol.iterator](): Generator<RType, void, void>
   [Symbol.asyncIterator](): AsyncGenerator<RType, void, void>
