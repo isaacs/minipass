@@ -69,7 +69,7 @@ export namespace Minipass {
     : ObjectModeOptions
 
   interface EventArguments {
-    [k: string]: unknown[]
+    [k: string | symbol]: unknown[]
   }
   /**
    * The listing of events that a Minipass class can emit.
