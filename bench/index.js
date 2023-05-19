@@ -7,6 +7,8 @@ const fs = require('fs')
 const impls = [
   'baseline',
   'minipass-v3',
+  'minipass-v4',
+  'minipass-v5',
   'minipass-latest',
   'minipass-current',
   'minipass-current-async',

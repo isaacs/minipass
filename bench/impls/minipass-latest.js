@@ -1,1 +1,1 @@
-module.exports = require('minipass')
+module.exports = require('minipass').Minipass
