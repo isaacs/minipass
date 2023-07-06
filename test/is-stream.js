@@ -1,59 +1,176 @@
-const { Minipass: MP } = require('../')
+const { Minipass: MP, isStream, isReadable, isWritable } = require('../')
 const EE = require('events')
 const t = require('tap')
 const Stream = require('stream')
 
-t.equal(MP.isStream(new MP()), true, 'a MiniPass is a stream')
-t.equal(MP.isStream(new Stream()), true, 'a Stream is a stream')
-t.equal(new MP() instanceof Stream, true, 'a MiniPass is a Stream')
+t.equal(MP.isStream, isStream, 'old export location is same function')
+
+t.equal(isStream(new MP()), true, 'a MiniPass is a stream')
+t.equal(isReadable(new MP()), true, 'a MiniPass is a readable')
+t.equal(isWritable(new MP()), true, 'a MiniPass is a writable')
+
+t.equal(isStream(new Stream()), true, 'a Stream is a stream')
+t.equal(isReadable(new Stream()), true, 'a Stream is a readable')
+t.equal(isWritable(new Stream()), false, 'a Stream is not a writable')
+
 const w = new EE()
 w.write = () => {}
 w.end = () => {}
-t.equal(MP.isStream(w), true, 'EE with write() and end() is a stream')
+t.equal(isStream(w), true, 'EE with write() and end() is a stream')
+t.equal(isWritable(w), true, 'EE with write() and end() is a writable')
+t.equal(
+  isReadable(w),
+  false,
+  'EE with write() and end() is not a readable'
+)
+
 const r = new EE()
 r.pipe = () => {}
-t.equal(MP.isStream(r), true, 'EE with pipe() is a stream')
+t.equal(isStream(r), true, 'EE with pipe() is a stream')
+t.equal(isWritable(r), false, 'EE with pipe() is not a writable')
+t.equal(isReadable(r), true, 'EE with pipe() is a readable')
+
 t.equal(
-  MP.isStream(new Stream.Readable()),
+  isStream(new Stream.Readable()),
   true,
   'Stream.Readable() is a stream'
 )
 t.equal(
-  MP.isStream(new Stream.Writable()),
+  isReadable(new Stream.Readable()),
+  true,
+  'Stream.Readable() is a readable'
+)
+t.equal(
+  isWritable(new Stream.Readable()),
+  false,
+  'Stream.Readable() is not a writable'
+)
+
+t.equal(
+  isStream(new Stream.Writable()),
   true,
   'Stream.Writable() is a stream'
 )
-t.equal(MP.isStream(new Stream.Duplex()), true, 'Stream.Duplex() is a stream')
 t.equal(
-  MP.isStream(new Stream.Transform()),
+  isWritable(new Stream.Writable()),
+  true,
+  'Stream.Writable() is a writable'
+)
+t.equal(
+  isReadable(new Stream.Writable()),
+  false,
+  'Stream.Writable() is not a readable'
+)
+
+t.equal(isStream(new Stream.Duplex()), true, 'Stream.Duplex() is a stream')
+t.equal(
+  isReadable(new Stream.Duplex()),
+  true,
+  'Stream.Duplex() is a readable'
+)
+t.equal(
+  isWritable(new Stream.Duplex()),
+  true,
+  'Stream.Duplex() is a writable'
+)
+
+t.equal(
+  isStream(new Stream.Transform()),
   true,
   'Stream.Transform() is a stream'
 )
 t.equal(
-  MP.isStream(new Stream.PassThrough()),
+  isReadable(new Stream.Transform()),
+  true,
+  'Stream.Transform() is a readable'
+)
+t.equal(
+  isWritable(new Stream.Transform()),
+  true,
+  'Stream.Transform() is a writable'
+)
+
+t.equal(
+  isStream(new Stream.PassThrough()),
   true,
   'Stream.PassThrough() is a stream'
 )
 t.equal(
-  MP.isStream(new (class extends MP {})()),
+  isReadable(new Stream.PassThrough()),
+  true,
+  'Stream.PassThrough() is a readable'
+)
+t.equal(
+  isWritable(new Stream.PassThrough()),
+  true,
+  'Stream.PassThrough() is a writable'
+)
+
+t.equal(
+  isStream(new (class extends MP {})()),
   true,
   'extends MP is a stream'
 )
-t.equal(MP.isStream(new EE()), false, 'EE without streaminess is not a stream')
 t.equal(
-  MP.isStream({
-    write() {},
-    end() {},
-    pipe() {},
-  }),
-  false,
-  'non-EE is not a stream'
+  isReadable(new (class extends MP {})()),
+  true,
+  'extends MP is a readable'
 )
-t.equal(MP.isStream('hello'), false, 'string is not a stream')
-t.equal(MP.isStream(99), false, 'number is not a stream')
 t.equal(
-  MP.isStream(() => {}),
+  isWritable(new (class extends MP {})()),
+  true,
+  'extends MP is a writable'
+)
+
+t.equal(
+  isStream(new EE()),
+  false,
+  'EE without streaminess is not a stream'
+)
+t.equal(
+  isReadable(new EE()),
+  false,
+  'EE without streaminess is not a readable'
+)
+t.equal(
+  isWritable(new EE()),
+  false,
+  'EE without streaminess is not a writable'
+)
+
+const ns = {
+  write() {},
+  end() {},
+  pipe() {},
+}
+t.equal(isStream(ns), false, 'non-EE is not a stream')
+t.equal(isReadable(ns), false, 'non-EE is not a readable')
+t.equal(isWritable(ns), false, 'non-EE is not a writable')
+
+t.equal(isStream('hello'), false, 'string is not a stream')
+t.equal(isReadable('hello'), false, 'string is not a readable')
+t.equal(isWritable('hello'), false, 'string is not a writable')
+
+t.equal(isStream(99), false, 'number is not a stream')
+t.equal(isReadable(99), false, 'number is not a readable')
+t.equal(isReadable(99), false, 'number is not a writable')
+
+t.equal(
+  isStream(() => {}),
   false,
   'function is not a stream'
 )
-t.equal(MP.isStream(null), false, 'null is not a stream')
+t.equal(
+  isReadable(() => {}),
+  false,
+  'function is not a readable'
+)
+t.equal(
+  isWritable(() => {}),
+  false,
+  'function is not a writable'
+)
+
+t.equal(isStream(null), false, 'null is not a stream')
+t.equal(isReadable(null), false, 'null is not a readable')
+t.equal(isWritable(null), false, 'null is not a writable')

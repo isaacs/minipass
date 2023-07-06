@@ -1,9 +1,9 @@
 'use strict'
 const t = require('tap')
-const { Minipass: MP } = require('../index.js')
+const { Minipass: MP } = require('../')
 
 t.test('basic', async t => {
-  const mp = new MP()
+  const mp = new MP({ encoding: 'utf8' })
   let i = 5
   const interval = setInterval(() => {
     if (i-- > 0) mp.write('foo\n')
@@ -12,7 +12,6 @@ t.test('basic', async t => {
       mp.end()
     }
   })
-  mp.setEncoding('utf8')
   const all = await mp.collect()
   t.same(all, ['foo\n', 'foo\n', 'foo\n', 'foo\n', 'foo\n'])
 })
@@ -44,10 +43,6 @@ t.test('concat buffers', async t => {
 t.test('concat objectMode fails', async t => {
   const a = new MP({ objectMode: true })
   await t.rejects(a.concat(), new Error('cannot concat in objectMode'))
-  const b = new MP()
-  b.write('asdf')
-  setTimeout(() => b.end({ foo: 1 }))
-  await t.rejects(b.concat(), new Error('cannot concat in objectMode'))
 })
 
 t.test('collect does not set bodyLength in objectMode', t =>
@@ -55,7 +50,7 @@ t.test('collect does not set bodyLength in objectMode', t =>
     .end({ a: 1 })
     .collect()
     .then(data => {
-      t.equal(typeof data.dataLength, 'undefined')
+      t.equal(data.dataLength, 0)
       t.same(data, [{ a: 1 }])
     })
 )

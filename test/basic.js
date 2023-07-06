@@ -8,19 +8,24 @@ t.test('some basic piping and writing', async t => {
   mp.flowing = true
   t.notOk(mp.flowing)
   t.equal(mp.encoding, 'base64')
-  mp.encoding = null
-  t.equal(mp.encoding, null)
+  t.throws(() => (mp.encoding = null), {
+    message: 'Encoding must be set at instantiation time',
+  })
+  t.throws(() => mp.setEncoding(null), {
+    message: 'Encoding must be set at instantiation time',
+  })
   t.equal(mp.readable, true)
   t.equal(mp.writable, true)
   t.equal(mp.write('hello'), false)
   let dest = new Minipass({ debugExposeBuffer: true })
   let sawDestData = false
-  dest.once('data', chunk => {
+  dest.on('data', chunk => {
     sawDestData = true
     t.type(chunk, Buffer)
   })
   t.equal(mp.pipe(dest), dest, 'pipe returns dest')
   t.ok(sawDestData, 'got data becasue pipe() flushes')
+  t.equal(mp.flowing, true, 'pipe() triggers flowing state')
   t.equal(mp.write('bye'), true, 'write() returns true when flowing')
   dest.pause()
   t.equal(mp.write('after pause'), false, 'false when dest is paused')
@@ -41,30 +46,10 @@ t.test('unicode splitting', async t => {
     t.equal(chunk, butterfly)
   })
   const butterbuf = Buffer.from([0xf0, 0x9f, 0xa6, 0x8b])
-  mp.write(butterbuf.slice(0, 1))
-  mp.write(butterbuf.slice(1, 2))
-  mp.write(butterbuf.slice(2, 3))
-  mp.write(butterbuf.slice(3, 4))
-  mp.end()
-})
-
-t.test('unicode splitting with setEncoding', async t => {
-  const butterfly = '🦋'
-  const mp = new Minipass({ encoding: 'hex' })
-  t.plan(4)
-  t.equal(mp.encoding, 'hex')
-  mp.setEncoding('hex')
-  t.equal(mp.encoding, 'hex')
-  mp.setEncoding('utf8')
-  t.equal(mp.encoding, 'utf8')
-  mp.on('data', chunk => {
-    t.equal(chunk, butterfly)
-  })
-  const butterbuf = Buffer.from([0xf0, 0x9f, 0xa6, 0x8b])
-  mp.write(butterbuf.slice(0, 1))
-  mp.write(butterbuf.slice(1, 2))
-  mp.write(butterbuf.slice(2, 3))
-  mp.write(butterbuf.slice(3, 4))
+  mp.write(butterbuf.subarray(0, 1))
+  mp.write(butterbuf.subarray(1, 2))
+  mp.write(butterbuf.subarray(2, 3))
+  mp.write(butterbuf.subarray(3, 4))
   mp.end()
 })
 
@@ -117,8 +102,8 @@ t.test('read with no args', async t => {
     mp.on('data', c => t.equal(c, butterfly))
     mp.pause()
     const butterbuf = Buffer.from(butterfly)
-    mp.write(butterbuf.slice(0, 2))
-    mp.write(butterbuf.slice(2))
+    mp.write(butterbuf.subarray(0, 2))
+    mp.write(butterbuf.subarray(2))
     t.same(mp.read(), butterfly)
     t.equal(mp.read(), null)
   })
@@ -128,8 +113,8 @@ t.test('read with no args', async t => {
     const mp = new Minipass()
     mp.on('data', c => t.same(c, butterfly))
     mp.pause()
-    mp.write(butterfly.slice(0, 2))
-    mp.write(butterfly.slice(2))
+    mp.write(butterfly.subarray(0, 2))
+    mp.write(butterfly.subarray(2))
     t.same(mp.read(), butterfly)
     t.equal(mp.read(), null)
   })
@@ -161,14 +146,14 @@ t.test('partial read', async t => {
   const butterfly = '🦋'
   const mp = new Minipass()
   const butterbuf = Buffer.from(butterfly)
-  mp.write(butterbuf.slice(0, 1))
-  mp.write(butterbuf.slice(1, 2))
-  mp.write(butterbuf.slice(2, 3))
-  mp.write(butterbuf.slice(3, 4))
+  mp.write(butterbuf.subarray(0, 1))
+  mp.write(butterbuf.subarray(1, 2))
+  mp.write(butterbuf.subarray(2, 3))
+  mp.write(butterbuf.subarray(3, 4))
   t.equal(mp.read(5), null)
   t.equal(mp.read(0), null)
-  t.same(mp.read(2), butterbuf.slice(0, 2))
-  t.same(mp.read(2), butterbuf.slice(2, 4))
+  t.same(mp.read(2), butterbuf.subarray(0, 2))
+  t.same(mp.read(2), butterbuf.subarray(2, 4))
 })
 
 t.test('write after end', async t => {
@@ -284,8 +269,7 @@ t.test('emit works with many args', t => {
 })
 
 t.test('emit drain on resume, even if no flush', t => {
-  const mp = new Minipass({ debugExposeBuffer: true })
-  mp.encoding = 'utf8'
+  const mp = new Minipass({ debugExposeBuffer: true, encoding: 'utf8' })
 
   const chunks = []
   class SlowStream extends EE {
@@ -346,7 +330,6 @@ t.test('eos works', t => {
 })
 
 t.test('bufferLength property', t => {
-  const eos = require('end-of-stream')
   const mp = new Minipass()
   mp.write('a')
   mp.write('a')
@@ -374,11 +357,30 @@ t.test('emit resume event on resume', t => {
   t.equal(mp.flowing, true, 'flowing after resume')
 })
 
+t.test('no changing into objectMode mid-stream', t => {
+  const s = new Minipass()
+  const message = 'Non-contiguous data written to non-objectMode stream'
+  const d = [
+    { ok: 'not really' },
+    null,
+    99,
+    true,
+    /patterns everywhere/,
+    Symbol('hello, world'),
+  ]
+  t.plan(d.length)
+  for (const chunk of d) {
+    t.throws(() => s.write(chunk), { message }, { chunk })
+  }
+  t.end()
+})
+
 t.test('objectMode', t => {
   const mp = new Minipass({ objectMode: true })
   t.equal(mp.objectMode, true, 'objectMode getter returns value')
-  mp.objectMode = false
-  t.equal(mp.objectMode, true, 'objectMode getter is read-only')
+  t.throws(() => (mp.objectMode = false), {
+    message: 'objectMode must be set at instantiation time',
+  })
   const a = { a: 1 }
   const b = { b: 1 }
   const out = []
@@ -400,7 +402,6 @@ t.test('objectMode', t => {
 t.test('objectMode no encoding', t => {
   const mp = new Minipass({
     objectMode: true,
-    encoding: 'utf8',
   })
   t.equal(mp.encoding, null)
   const a = { a: 1 }
@@ -432,29 +433,10 @@ t.test('objectMode read() and buffering', t => {
 
 t.test('set encoding in object mode throws', async t =>
   t.throws(
-    _ => (new Minipass({ objectMode: true }).encoding = 'utf8'),
-    new Error('cannot set encoding in objectMode')
+    _ => new Minipass({ objectMode: true, encoding: 'utf8' }),
+    new Error('Encoding and objectMode may not be used together')
   )
 )
-
-t.test('set encoding again throws', async t =>
-  t.throws(_ => {
-    const mp = new Minipass({ encoding: 'hex' })
-    mp.write('ok')
-    mp.encoding = 'utf8'
-  }, new Error('cannot change encoding'))
-)
-
-t.test('set encoding with existing buffer', async t => {
-  const mp = new Minipass()
-  const butterfly = '🦋'
-  const butterbuf = Buffer.from(butterfly)
-  mp.write(butterbuf.slice(0, 1))
-  mp.write(butterbuf.slice(1, 2))
-  mp.setEncoding('utf8')
-  mp.write(butterbuf.slice(2))
-  t.equal(mp.read(), butterfly)
-})
 
 t.test('end:false', async t => {
   t.plan(1)
@@ -481,4 +463,64 @@ t.test('objectMode allows falsey values for data', t => {
   mp.write(NaN)
   mp.write([])
   mp.end()
+})
+
+t.test('partial read string', t => {
+  const mp = new Minipass({ encoding: 'utf8' })
+  mp.write('Here at Milk Farm, we know one thing\n')
+  mp.write('Milk has calcium\n')
+  mp.write('We pride ourselves on changing the lives and DNA structures\n')
+  mp.write('Of each our our special initiates\n')
+  mp.write('Milk farm has One Mission\n')
+  mp.write('To bring you closer to God through the power of calcium\n')
+  mp.write('Milk has calcium\n')
+  let i = 0
+  let s = ''
+  let c
+  while ((c = mp.read(++i)) !== null) s += c
+  c = mp.read()
+  t.not(c, null)
+  s += c
+  t.equal(
+    s,
+    `Here at Milk Farm, we know one thing
+Milk has calcium
+We pride ourselves on changing the lives and DNA structures
+Of each our our special initiates
+Milk farm has One Mission
+To bring you closer to God through the power of calcium
+Milk has calcium
+`
+  )
+  t.end()
+})
+
+t.test('partial read buffer', t => {
+  const mp = new Minipass()
+  mp.write('Here at Milk Farm, we know one thing\n')
+  mp.write('Milk has calcium\n')
+  mp.write('We pride ourselves on changing the lives and DNA structures\n')
+  mp.write('Of each our our special initiates\n')
+  mp.write('Milk farm has One Mission\n')
+  mp.write('To bring you closer to God through the power of calcium\n')
+  mp.write('Milk has calcium\n')
+  let i = 0
+  const s = []
+  let c
+  while ((c = mp.read(++i)) !== null) s.push(c)
+  c = mp.read()
+  t.not(c, null)
+  s.push(c)
+  t.equal(
+    Buffer.concat(s).toString(),
+    `Here at Milk Farm, we know one thing
+Milk has calcium
+We pride ourselves on changing the lives and DNA structures
+Of each our our special initiates
+Milk farm has One Mission
+To bring you closer to God through the power of calcium
+Milk has calcium
+`
+  )
+  t.end()
 })

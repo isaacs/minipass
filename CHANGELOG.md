@@ -1,5 +1,51 @@
 # chernge lerg
 
+## 7.0
+
+This is a big one, please read carefully before upgrading from
+prior versions, especially if you extend Minipass in a subclass.
+
+### Breaking Changes
+
+- Rewritten in TypeScript as hybrid esm/cjs build, so a lot of
+  types changed in subtle ways, and several behaviors got
+  stricter.
+- Minipass now inherits from `EventEmitter` rather than `Stream`.
+  Nothing from the `Stream` class was ever used by Minipass, but
+  it inherited from `Stream` to pass checks in some stream
+  libraries that checked `instanceof Stream`. Unfortunately, the
+  type difference in the `pipe()` method signature made it
+  challenging to continue doing in TypeScript.
+- It is no longer possible to change the type of data emitted
+  after a Minipass stream is instantiated, as this would thwart
+  TypeScript's static checks. As a consequence:
+  - The `setEncoding` method and the `encoding` setter are
+    deprecated. Encoding may _only_ be set in the constructor
+    options object.
+  - `objectMode` is no longer inferred by writing something other
+    than a string or Buffer. It may _only_ be set in the
+    constructor options object.
+- If all existing data consumers are removed, via
+  `stream.unpipe(dest)`, `stream.removeListener('data', handler)`,
+  `stream.removeAllListeners('data')`, and/or
+  `stream.removeAllListeners()`, then the data will stop flowing.
+  Note that it is still possible to explicitly discard a stream's
+  data by calling `stream.resume()` in the absence of any
+  consumers.
+
+### Features and Fixes
+
+- Removed a very subtle performance issue that made objectMode
+  Minipass streams slower in some cases than node core streams.
+  Minipass is now faster than node core streams for all data
+  types.
+- The array returned by `stream.collect()` for objectMode streams
+  will have a `dataLength` property equal to 0, rather than
+  undefined.
+- `isStream` is moved from a static member on the Minipass class
+  to a named export.
+- `isWritable()` and `isReadable()` methods added.
+
 ## 6.0
 
 - Define event argument types in an extensible manner, defaulting

@@ -1,5 +1,4 @@
-.*.swp
 node_modules
-.nyc_output/
-coverage/
-/index.mjs
+/.nyc_output/
+/coverage/
+/dist

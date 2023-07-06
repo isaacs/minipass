@@ -1,6 +1,6 @@
 'use strict'
 const t = require('tap')
-const { Minipass: MP } = require('../index.js')
+const { Minipass: MP } = require('../')
 
 t.test('sync iteration', t => {
   const cases = {
@@ -305,6 +305,6 @@ t.test('iterators are compliant Generators', async t => {
   t.equal(it[Symbol.iterator](), it, 'sync is iterable iterator')
   const ait = mp[Symbol.asyncIterator]()
   t.equal(ait[Symbol.asyncIterator](), ait, 'async is iterable iterator')
-  t.same(await ait.throw('yeet'), { done: true })
-  t.same(await ait.next(), { done: true }, 'stopped by throw')
+  t.same(await ait.throw('yeet'), { value: undefined, done: true })
+  t.same(await ait.next(), { value: undefined, done: true }, 'stopped by throw')
 })
