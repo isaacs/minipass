@@ -835,8 +835,8 @@ export class Minipass<
    *
    * Triggers the flow of data.
    */
-  pipe<W extends Minipass.Writable>(dest: W, opts?: PipeOptions) {
-    if (this[DESTROYED]) return
+  pipe<W extends Minipass.Writable>(dest: W, opts?: PipeOptions): W {
+    if (this[DESTROYED]) return dest
     this[DISCARDED] = false
 
     const ended = this[EMITTED_END]
