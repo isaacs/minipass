@@ -1142,7 +1142,7 @@ export class Minipass<
    * Return a Promise that resolves to an array of all emitted data once
    * the stream ends.
    */
-  async collect() {
+  async collect(): Promise<RType[] & { dataLength: number }> {
     const buf: RType[] & { dataLength: number } = Object.assign([], {
       dataLength: 0,
     })
@@ -1165,20 +1165,22 @@ export class Minipass<
    *
    * Not allowed on objectMode streams.
    */
-  async concat() {
+  async concat(): Promise<RType> {
     if (this[OBJECTMODE]) {
       throw new Error('cannot concat in objectMode')
     }
     const buf = await this.collect()
-    return this[ENCODING]
-      ? buf.join('')
-      : Buffer.concat(buf as Buffer[], buf.dataLength)
+    return (
+      this[ENCODING]
+        ? buf.join('')
+        : Buffer.concat(buf as Buffer[], buf.dataLength)
+    ) as RType
   }
 
   /**
    * Return a void Promise that resolves once the stream ends.
    */
-  async promise() {
+  async promise(): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       this.on(DESTROYED, () => reject(new Error('stream destroyed')))
       this.on('error', er => reject(er))
