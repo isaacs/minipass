@@ -5,9 +5,9 @@ const proc =
         stdout: null,
         stderr: null,
       }
-import { EventEmitter } from 'node:events'
-import Stream from 'node:stream'
-import { StringDecoder } from 'node:string_decoder'
+import { EventEmitter } from 'events'
+import Stream from 'stream'
+import { StringDecoder } from 'string_decoder'
 
 /**
  * Same as StringDecoder, but exposing the `lastNeed` flag on the type
