@@ -680,7 +680,7 @@ export class Minipass<
       ]
     }
 
-    const ret = this[READ](n || null, this[BUFFER][0])
+    const ret = this[READ](n || null, this[BUFFER][0] as RType)
     this[MAYBE_EMIT_END]()
     return ret
   }
@@ -1306,7 +1306,7 @@ export class Minipass<
    * If an error argument is provided, then it will be emitted in an
    * 'error' event.
    */
-  destroy(er: unknown) {
+  destroy(er?: unknown) {
     if (this[DESTROYED]) {
       if (er) this.emit('error', er)
       else this.emit(DESTROYED)
