@@ -1,10 +1,10 @@
 import { spawn } from 'child_process'
-import EE from 'events'
-import {unlinkSync, writeFileSync} from 'fs'
-import t from 'tap'
-import {fileURLToPath} from 'url'
-import { Minipass } from '../src/index.js'
 import eos from 'end-of-stream'
+import EE from 'events'
+import { unlinkSync, writeFileSync } from 'fs'
+import t from 'tap'
+import { fileURLToPath } from 'url'
+import { Minipass } from '../src/index.js'
 
 t.test('some basic piping and writing', async t => {
   let mp = new Minipass<string, string>({
@@ -244,7 +244,9 @@ t.test('end with chunk pending', async t => {
 })
 
 t.test('pipe to stderr does not throw', t => {
-  const module = JSON.stringify(fileURLToPath(new URL('../dist/esm/index.js', import.meta.url)))
+  const module = JSON.stringify(
+    String(new URL('../dist/esm/index.js', import.meta.url))
+  )
   const file = fileURLToPath(new URL('./prog.js', import.meta.url))
   writeFileSync(
     file,
