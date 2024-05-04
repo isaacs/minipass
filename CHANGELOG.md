@@ -1,5 +1,11 @@
 # chernge lerg
 
+## 7.1
+
+- Update the type definitions to be more easily extended in
+  classes that are compatible with the NodeJS.WritableStream type
+  in the latest versions of `@types/node`.
+
 ## 7.0
 
 This is a big one, please read carefully before upgrading from

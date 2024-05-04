@@ -720,7 +720,7 @@ export class Minipass<
     chunk?: WType | (() => void),
     encoding?: Minipass.Encoding | (() => void),
     cb?: () => void
-  ) {
+  ): this {
     if (typeof chunk === 'function') {
       cb = chunk as () => void
       chunk = undefined
@@ -1102,7 +1102,7 @@ export class Minipass<
 
   [EMITDATA](data: RType) {
     for (const p of this[PIPES]) {
-      if (p.dest.write(data) === false) this.pause()
+      if (p.dest.write(data as RType) === false) this.pause()
     }
     const ret = this[DISCARDED] ? false : super.emit('data', data)
     this[MAYBE_EMIT_END]()
