@@ -306,11 +306,13 @@ export namespace Minipass {
   /**
    * Utility type to determine allowed options based on read type
    */
-  export type Options<T> = T extends string
-    ? EncodingOptions | ObjectModeOptions
-    : T extends Buffer
-    ? BufferOptions | ObjectModeOptions
-    : SharedOptions
+  export type Options<T> =
+    | ObjectModeOptions
+    | (T extends string
+        ? EncodingOptions
+        : T extends Buffer
+        ? BufferOptions
+        : SharedOptions)
 }
 
 const isObjectModeOptions = (
@@ -379,9 +381,11 @@ export class Minipass<
    * {@link Minipass.SharedOptions.encoding}, as appropriate.
    */
   constructor(
-    ...args: RType extends Buffer
-      ? [] | [Minipass.Options<RType>]
-      : [Minipass.Options<RType>]
+    ...args:
+      | [Minipass.ObjectModeOptions]
+      | (RType extends Buffer
+          ? [] | [Minipass.Options<RType>]
+          : [Minipass.Options<RType>])
   ) {
     const options: Minipass.Options<RType> = (args[0] ||
       {}) as Minipass.Options<RType>
