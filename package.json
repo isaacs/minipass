@@ -69,7 +69,7 @@
     "stream"
   ],
   "author": "Isaac Z. Schlueter <i@izs.me> (http://blog.izs.me/)",
-  "license": "ISC",
+  "license": "BlueOak-1.0.0",
   "engines": {
     "node": ">=16 || 14 >=14.17"
   },
