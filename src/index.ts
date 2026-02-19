@@ -171,7 +171,7 @@ class PipeProxyErrors<T> extends Pipe<T> {
     opts: PipeOptions
   ) {
     super(src, dest, opts)
-    this.proxyErrors = er => dest.emit('error', er)
+    this.proxyErrors = (er: Error) => this.dest.emit('error', er)
     src.on('error', this.proxyErrors)
   }
 }
@@ -1255,6 +1255,7 @@ export class Minipass<
       [Symbol.asyncIterator]() {
         return this
       },
+      [Symbol.asyncDispose]: async () => {},
     }
   }
 
@@ -1295,6 +1296,7 @@ export class Minipass<
       [Symbol.iterator]() {
         return this
       },
+      [Symbol.dispose]: () => {},
     }
   }
 

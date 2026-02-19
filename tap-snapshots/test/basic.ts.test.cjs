@@ -11,7 +11,7 @@ Array [
   null,
   undefined,
   0,
-  null,
+  NaN,
   Array [],
 ]
 `

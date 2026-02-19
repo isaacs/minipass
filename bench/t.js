@@ -92,10 +92,10 @@ const afterMain = results => {
 const round = num => Math.round(num * 1000)/1000
 
 const test = (testname, many, type) => {
-  const timer = require('./lib/timer.js')
+  //const timer = require('./lib/timer.js')
   const Class = getClass(testname)
 
-  const done = timer()
+  //const done = timer()
   runTest(Class, many, type, iterations, done)
 }
 
